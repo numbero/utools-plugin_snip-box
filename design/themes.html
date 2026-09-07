@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snippet Box · 主题选型（11 套风格）</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/app.css">
+<link rel="stylesheet" href="css/themes.css">
+</head>
+<body>
+<div class="gal">
+
+  <header class="gal-head">
+    <h1 class="gal-title">Snippet Box · 主题选型</h1>
+    <p class="gal-sub">
+      11 套新风格 + 当前主题作对照，每个窗口都是<b>插件真实界面</b>（同一份 <b>app.css</b>，只换设计令牌），不是截图。
+      每套都能单独切浅/深 —— 因为插件本身支持跟随系统，两套都得站得住。
+    </p>
+    <div class="gal-tools">
+      <button class="gpick" data-all="light">全部浅色</button>
+      <button class="gpick" data-all="dark">全部深色</button>
+      <button class="gpick" data-all="default" aria-pressed="true">各自默认</button>
+      <span class="gal-sep"></span>
+      <button class="gpick" data-layout="double" aria-pressed="true">双列对比</button>
+      <button class="gpick" data-layout="single">单列 1:1 真实尺寸</button>
+      <span class="gal-picked" id="picked"><span class="dotmark" style="background:#5A5D66"></span>还没选 · 点卡片上的「选这套」</span>
+    </div>
+  </header>
+
+  <div class="gal-grid" id="grid"></div>
+
+  <div class="gal-foot">
+    <b>怎么选：</b>记住编号就行（例如「07」或「Emerald Slate」）。也可以混搭，比如「要 03 的配色 + 06 的锐利小圆角 + 02 的渐变主按钮」——
+    令牌是分开的，配色 / 圆角 / 阴影 / 字体四个维度都能单独取。<br>
+    <b>选中后我会做什么：</b>把该套令牌写进 <code>css/tokens.css</code> 的浅色与深色两块（含 <code>prefers-color-scheme</code> 自动跟随），
+    需要时把结构性差异（渐变主按钮、毛玻璃分层等）补进 <code>css/app.css</code>，我自己在浏览器里逐屏核对渲染效果，
+    再跑 <code>./build.sh</code> 重出 <code>dist/</code>。改动只在样式层，不碰存储与 uTools API —— 你只需要回一句编号。
+  </div>
+
+</div>
+
+<script>
+/* ---------- 插件真实界面（S1 主列表）的静态快照，10 张卡共用 ---------- */
+function winHTML() {
+  const ico = {
+    all:  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>',
+    pin:  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M9.5 1.5l5 5-2 .8-2.6 2.6-.4 3.1-4.7-4.7L1.7 12l-.7-.7 3.3-3.1L3 3.5l3.1-.4L8.7.5l.8 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+    git:  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="4.5" cy="3.5" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="12.5" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="11.5" cy="7" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 5.3v5.4M6.3 12.5h2a2 2 0 002-2V8.8" stroke="currentColor" stroke-width="1.4"/></svg>',
+    mail: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.8" y="3.5" width="12.4" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M2.4 4.6L8 8.8l5.6-4.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    sign: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M1.8 11.6c2.4 0 2.6-7 4.4-7 1.3 0 1 4.4 2.3 4.4 1 0 1.2-2.2 2.4-2.2.9 0 1 1.4 1.9 1.4h1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    search:'<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    gear: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    plus: '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    copy: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5.2" y="5.2" width="8.6" height="8.6" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M10.8 5.2V3.6A1.4 1.4 0 009.4 2.2H3.6A1.4 1.4 0 002.2 3.6v5.8a1.4 1.4 0 001.4 1.4h1.6" stroke="currentColor" stroke-width="1.4"/></svg>',
+    edit: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.2 2.4l2.4 2.4L6 12.4l-3 .6.6-3 7.6-7.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    arrow:'<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  const side = (i, ic, nm, ct, cur) =>
+    `<button class="side-item"${cur ? ' aria-current="true"' : ''}>
+       <span class="ico">${ic}</span><span class="nm">${nm}</span><span class="ct">${ct}</span>
+     </button>`;
+
+  return `
+  <div class="viewport">
+    <div class="searchbar">
+      <div class="search-field">${ico.search}
+        <input type="text" placeholder="搜索片段名称、内容或关键字..." readonly>
+      </div>
+      <button class="btn btn--primary">${ico.plus}新建</button>
+      <button class="btn btn--icon btn--ghost">${ico.gear}</button>
+    </div>
+
+    <div class="body-row">
+      <aside class="sidebar">
+        <div class="side-sec">片段</div>
+        ${side(0, ico.all,  '全部片段', 24, true)}
+        ${side(0, ico.pin,  '已置顶',   3,  false)}
+        <div class="side-sec">分组</div>
+        ${side(0, ico.git,  'git',      6,  false)}
+        ${side(0, ico.mail, '邮件',     5,  false)}
+        ${side(0, ico.sign, '签名',     4,  false)}
+        <div class="side-sep"></div>
+        <button class="side-item side-add">${ico.plus}<span class="nm">新建分组</span></button>
+      </aside>
+
+      <div class="list-pane">
+        <div class="list">
+
+          <div class="list-item" aria-selected="true">
+            <div class="li-top">
+              <span class="li-name">git commit 模板</span>
+              <span class="li-badges">
+                <span class="pill pill--pin">置顶</span>
+                <span class="pill pill--key">gc</span>
+              </span>
+            </div>
+            <div class="li-preview">feat(<span class="tok tok--variable">{{?scope}}</span>): <span class="tok tok--variable">{{?改动}}</span> · <span class="tok tok--clipboard">{{clipboard}}</span></div>
+            <div class="li-actions">
+              <span class="icon-btn on">${ico.pin}</span>
+              <span class="icon-btn">${ico.copy}</span>
+              <span class="icon-btn">${ico.edit}</span>
+            </div>
+            <div class="render-block">
+              <div class="render-label"><span class="live"></span>实时渲染</div>
+              <div class="render-out">feat(auth): 修复登录态过期后无法刷新 token
+
+Refs: JDK-2041 · 2026-09-07 21:48</div>
+              <div class="render-foot">
+                <button class="btn btn--primary btn--sm">粘贴 ${ico.arrow}</button>
+                <button class="btn btn--sm">仅复制</button>
+                <span class="render-hint">↵ 粘贴到前台应用</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="list-item">
+            <div class="li-top">
+              <span class="li-name">周报开头</span>
+              <span class="li-badges"><span class="pill pill--key">zb</span></span>
+            </div>
+            <div class="li-preview"><span class="tok tok--time">{{date}}</span> 周报 · 本周完成 <span class="tok tok--variable">{{?事项}}</span></div>
+            <div class="li-meta"><span class="pill pill--grp">邮件</span><span>昨天 18:22</span></div>
+          </div>
+
+          <div class="list-item">
+            <div class="li-top">
+              <span class="li-name">随机追踪 ID</span>
+              <span class="li-badges"><span class="pill pill--var">待填 1</span></span>
+            </div>
+            <div class="li-preview">trace=<span class="tok tok--random tok--volatile">{{uuid}}</span> · build=<span class="tok tok--random">{{random:6}}</span></div>
+            <div class="li-meta"><span class="pill pill--grp">git</span><span>3 天前</span></div>
+          </div>
+
+          <div class="list-item">
+            <div class="li-top">
+              <span class="li-name">机器信息报障</span>
+              <span class="li-badges"><span class="pill pill--warn">1 处待确认</span></span>
+            </div>
+            <div class="li-preview"><span class="tok tok--system">{{os}}</span> · <span class="tok tok--system">{{hostname}}</span> · <span class="tok tok--unknown">{{?ip}}</span></div>
+            <div class="li-meta"><span class="pill pill--grp">签名</span><span>上周</span></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="ctx">前台：<b>Visual Studio Code</b></span>
+      <span class="hints">
+        <span class="hint"><span class="kbd">↑</span><span class="kbd">↓</span> 选择</span>
+        <span class="hint"><span class="kbd">↵</span> 粘贴</span>
+        <span class="hint"><span class="kbd">⌥</span><span class="kbd">↵</span> 仅复制</span>
+        <span class="hint hint--edit"><span class="kbd">⌘</span><span class="kbd">E</span> 编辑</span>
+      </span>
+    </div>
+  </div>`;
+}
+
+/* ---------- 10 套风格 + 当前主题对照 ---------- */
+const THEMES = [
+  { id:'current', no:'00', name:'靛蓝原生', en:'Indigo Native', now:true, mode:'light',
+    why:'现在线上这套：macOS 原生感、中性靛蓝、7px 圆角。放最前面当对照基准。',
+    tags:['现状','中性靛蓝','原生感'], chips:['#FFFFFF','#EFEFF2','#5B6BD6','#1A1A1E'] },
+
+  { id:'porcelain', no:'01', name:'白瓷', en:'Porcelain', mode:'light',
+    why:'当前主题的精致升级版：更冷的中性灰阶、8–12px 圆角、双层柔和阴影、顶部高光内阴影，选中色条减半淡出。',
+    tags:['浅色为主','低刺激','圆角更大','分层柔影'], chips:['#FFFFFF','#F1F2F6','#4B57C9','#15171E'] },
+
+  { id:'aurora', no:'02', name:'极光玻璃', en:'Aurora Glass', mode:'dark',
+    why:'半透明分层 + 背景三色辉光（靛/青/紫），侧栏与标题栏透出底层光，主按钮走青蓝渐变并带外发光。',
+    tags:['深色为主','毛玻璃','渐变按钮','氛围光'], chips:['#080B16','#7C8CFF','#67E3F5','#EDF1FA'] },
+
+  { id:'nord', no:'03', name:'极地霜蓝', en:'Nord Frost', mode:'light',
+    why:'Nord 色板的低饱和冷灰蓝，浅深两套都是成熟配色，长时间盯屏幕最不累，气质安静克制。',
+    tags:['浅深双修','低饱和','经典色板'], chips:['#FBFCFD','#E8EDF2','#5E81AC','#242B33'] },
+
+  { id:'tokyonight', no:'04', name:'夜色东京', en:'Tokyo Night', mode:'dark',
+    why:'Tokyo Night 深蓝紫底，青/紫/绿高亮区分占位符类别最清楚，等宽字体切到 JetBrains Mono，程序员一眼认得。',
+    tags:['深色为主','高辨识','代码感'], chips:['#1A1B26','#24283B','#7AA2F7','#C0CAF5'] },
+
+  { id:'kraft', no:'05', name:'暖纸陶土', en:'Kraft Paper', mode:'light',
+    why:'米白纸感底 + 陶土橘强调，暖色阴影、13–17px 大圆角，像高级手写笔记应用，和满屏冷色工具形成反差。',
+    tags:['暖色','纸感','大圆角','辨识度高'], chips:['#FDFBF7','#EEE7DA','#BF5F3C','#2B2620'] },
+
+  { id:'graphite', no:'06', name:'石墨瑞士', en:'Graphite Swiss', mode:'light',
+    why:'几乎去掉彩色：强调色就是黑/白本身，发丝边框、2–5px 锐利圆角、零阴影、字距放大的全大写小标签。最克制、最耐看。',
+    tags:['极简','无彩色','锐利','零阴影'], chips:['#FFFFFF','#EBEBEB','#111111','#0A0A0A'] },
+
+  { id:'emerald', no:'07', name:'石板祖母绿', en:'Emerald Slate', mode:'dark',
+    why:'Linear / Vercel 那一路：冷石板深灰带一点绿调，单一翡翠强调色，高对比、锐利、工程感强，浅色系同构。',
+    tags:['深色为主','高对比','工程感'], chips:['#111614','#1C2320','#3DD68C','#E7F0EB'] },
+
+  { id:'cyberink', no:'08', name:'荧光墨', en:'Cyber Ink', mode:'dark',
+    why:'最激进的一套：近黑底 + 琥珀荧光，整个界面（不只代码）都换成等宽字体，硬直角、发光边框，终端美学。',
+    tags:['深色为主','全等宽','硬直角','风格极强'], chips:['#0A0B0C','#15171A','#FFB000','#E9E6E1'] },
+
+  { id:'rose', no:'09', name:'玫瑰石英', en:'Rosé Quartz', mode:'light',
+    why:'极浅粉灰底 + 玫瑰金强调，10–18px 大圆角、漫射柔影。柔和但不甜腻，中性偏暖，适合当日常工具的皮肤。',
+    tags:['浅色为主','柔和','大圆角'], chips:['#FFFCFD','#F3E9EC','#C2657E','#2C2126'] },
+
+  { id:'dusk', no:'10', name:'暮紫渐变', en:'Dusk Violet', mode:'dark',
+    why:'紫灰夜色 + 紫→粉渐变（主按钮与选中色条都吃渐变），发光焦点环，14–18px 圆角。现代 SaaS 产品那套视觉语言。',
+    tags:['深色为主','渐变','发光','SaaS 感'], chips:['#181322','#221B2F','#A78BFA','#EDE8F7'] },
+
+  { id:'material', no:'11', name:'材料设计', en:'Material You', mode:'light',
+    why:'Material 3 官方基准色板：tonal 分层表面、secondary-container 胶囊导航与色调按钮、全圆胶囊主按钮、4/8/12/16/28 形状尺度、M3 elevation 阴影。安卓 12+ 那套系统级语言。',
+    tags:['浅深双修','官方色板','胶囊形','tonal 分层'], chips:['#FEF7FF','#E8DEF8','#6750A4','#1D1B20'] }
+];
+
+const grid = document.getElementById('grid');
+const pickedEl = document.getElementById('picked');
+let picked = null;
+
+grid.innerHTML = THEMES.map(t => `
+  <article class="card" data-card="${t.id}">
+    <div class="card-head">
+      <div class="card-row1">
+        <span class="card-no">${t.no}</span>
+        <span class="card-name">${t.name}</span>
+        <span class="card-en">${t.en}</span>
+        ${t.now ? '<span class="card-tag-now">当前</span>' : ''}
+      </div>
+      <div class="card-row2">
+        <p class="card-why">${t.why}</p>
+        <span class="chips">${t.chips.map(c => `<i class="chip" style="background:${c}"></i>`).join('')}</span>
+      </div>
+      <div class="card-row3">
+        <span class="tags">${t.tags.map(x => `<i class="tag">${x}</i>`).join('')}</span>
+        <span class="gtoggle" data-tg="${t.id}">
+          <button data-m="light" aria-pressed="${t.mode === 'light'}">浅色</button>
+          <button data-m="dark"  aria-pressed="${t.mode === 'dark'}">深色</button>
+        </span>
+        <button class="gpick-card" data-pick="${t.id}">${t.now ? '保持这套' : '选这套'}</button>
+      </div>
+    </div>
+    <div class="win-wrap" data-swatch="${t.id}" data-mode="${t.mode}">
+      <div class="win">${winHTML()}</div>
+    </div>
+  </article>`).join('');
+
+function setMode(id, m) {
+  const wrap = grid.querySelector(`[data-swatch="${id}"]`);
+  wrap.dataset.mode = m;
+  const tg = grid.querySelector(`[data-tg="${id}"]`);
+  tg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+}
+
+grid.addEventListener('click', e => {
+  const mb = e.target.closest('[data-tg] button');
+  if (mb) { setMode(mb.closest('[data-tg]').dataset.tg, mb.dataset.m); return; }
+
+  const pb = e.target.closest('[data-pick]');
+  if (pb) {
+    const id = pb.dataset.pick;
+    picked = id;
+    grid.querySelectorAll('.card').forEach(c => c.classList.toggle('is-picked', c.dataset.card === id));
+    grid.querySelectorAll('[data-pick]').forEach(b => {
+      const on = b.dataset.pick === id;
+      b.textContent = on ? '已选定 ✓' : (THEMES.find(t => t.id === b.dataset.pick).now ? '保持这套' : '选这套');
+    });
+    const t = THEMES.find(x => x.id === id);
+    const mode = grid.querySelector(`[data-swatch="${id}"]`).dataset.mode === 'dark' ? '深色' : '浅色';
+    pickedEl.innerHTML = `<span class="dotmark"></span>已选 <b>${t.no} ${t.name}</b> · ${t.en} · 当前预览为${mode} —— 回对话告诉我编号即可`;
+  }
+});
+
+document.querySelector('.gal-tools').addEventListener('click', e => {
+  const b = e.target.closest('.gpick');
+  if (!b) return;
+
+  if (b.dataset.all) {
+    document.querySelectorAll('[data-all]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    if (b.dataset.all !== 'default') THEMES.forEach(t => setMode(t.id, b.dataset.all));
+    else THEMES.forEach(t => setMode(t.id, t.mode));
+  }
+  if (b.dataset.layout) {
+    document.querySelectorAll('[data-layout]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    document.body.classList.toggle('single', b.dataset.layout === 'single');
+  }
+});
+</script>
+</body>
+</html>

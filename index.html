@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snippet Box</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="viewport" id="app">
+
+  <!-- ============ S1 主列表 ============ -->
+  <div class="view" id="viewList">
+    <div class="searchbar">
+      <div class="search-field">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="searchInput" type="text" placeholder="搜索片段名称、内容或关键字..." autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" hidden title="清空搜索">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <button class="btn btn--primary" id="btnNew">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        新建
+      </button>
+      <button class="btn btn--icon btn--ghost" id="btnSettings" title="设置">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="body-row" id="listBody">
+      <aside class="sidebar" id="sidebar"></aside>
+      <div class="list-pane">
+        <div class="list" id="list" role="listbox" aria-label="片段列表" tabindex="0"></div>
+      </div>
+    </div>
+
+    <div class="empty" id="emptyState" hidden>
+      <div class="empty-art">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 8l2.5-4h13L21 8v11a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8h5l1.2 2.2h5.6L16 8h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="empty-title">还没有片段</h2>
+      <p class="empty-desc">片段是可以带占位符的文本模板。写下模板，占位符会在你浏览时就渲染成真实值：</p>
+      <div class="empty-demo" id="emptyDemo"></div>
+      <div class="empty-actions">
+        <button class="btn btn--primary" id="btnEmptyNew">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          新建第一个片段
+        </button>
+        <button class="btn" id="btnEmptySeed">导入 4 条示例</button>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="ctx" id="ctxStat"></span>
+      <span class="hints">
+        <span class="hint"><span class="kbd">↑</span><span class="kbd">↓</span> 选择</span>
+        <span class="hint"><span class="kbd">↵</span> 粘贴</span>
+        <span class="hint"><span class="kbd">⌥</span><span class="kbd">↵</span> 仅复制</span>
+        <span class="hint hint--edit"><span class="kbd">⌘</span><span class="kbd">E</span> 编辑</span>
+        <span class="hint hint--esc"><span class="kbd">esc</span> 退后台</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ S2 片段编辑器 ============ -->
+  <div class="view" id="viewEditor" hidden>
+    <div class="ed-head">
+      <button class="btn btn--icon btn--ghost" id="edBack" title="返回列表">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="ed-title" id="edTitle">编辑片段</span>
+      <span class="spacer"></span>
+      <button class="btn btn--danger" id="edDelete" hidden>删除</button>
+      <button class="btn btn--ghost" id="edCancel">取消</button>
+      <button class="btn btn--primary" id="edSave">保存 <span class="kbd">⌘</span><span class="kbd">↵</span></button>
+    </div>
+    <div class="ed-body">
+      <div class="ed-meta">
+        <div class="field">
+          <span class="field-label">名称</span>
+          <input class="input" id="edName" placeholder="例如：git commit 模板" autocomplete="off">
+        </div>
+        <div class="field">
+          <span class="field-label">分组</span>
+          <select class="select" id="edGroup"></select>
+        </div>
+        <div class="field">
+          <span class="field-label">搜索关键字</span>
+          <input class="input input--mono" id="edSearchKey" placeholder="仅插件内搜索用" autocomplete="off">
+        </div>
+        <div class="field">
+          <span class="field-label">直达关键字</span>
+          <input class="input input--mono" id="edDirectKey" placeholder="开启下方开关后生效" autocomplete="off" disabled>
+        </div>
+      </div>
+
+      <div class="ed-toggles">
+        <label class="ed-toggle"><button class="checkbox" id="edPinned" role="checkbox" aria-checked="false">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6.5L4.8 9 10 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>置顶</label>
+        <label class="ed-toggle"><button class="switch" id="edDirect" role="switch" aria-checked="false"></button>开启直达关键字</label>
+        <span class="spacer" style="flex:1"></span>
+        <span class="pill pill--var" id="edDegrade" hidden>含待填变量 · 直达时降级为显窗</span>
+      </div>
+
+      <div class="panel tpl-editor-panel" style="position:relative">
+        <div class="panel-head">
+          <span class="panel-name">模板</span>
+          <span class="spacer"></span>
+          <button class="btn btn--sm btn--ghost" id="edPopBtn">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2L2 8l4 6M10 2l4 6-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            可用占位符
+          </button>
+        </div>
+        <div class="panel-body tpl-editor">
+          <div class="tpl-lines" id="edLines"></div>
+          <textarea class="textarea textarea--tpl" id="edTpl" spellcheck="false" placeholder="写下模板，例如：feat({{?scope}}): {{?改动}}"></textarea>
+        </div>
+        <div class="pop" id="edPop" hidden></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-name">实时预览</span>
+          <span style="font-size:10px;color:var(--text-3)">这就是回车后会输出的内容</span>
+          <span class="spacer"></span>
+          <button class="btn btn--sm btn--ghost" id="edRefreshCtx">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            刷新上下文
+          </button>
+        </div>
+        <div class="panel-body">
+          <div class="preview-body" id="edPreview"></div>
+          <div class="issue-bar" id="edIssues"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S4 设置 ============ -->
+  <div class="view" id="viewSettings" hidden>
+    <div class="ed-head">
+      <button class="btn btn--icon btn--ghost" id="setBack" title="返回">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="ed-title">设置</span>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost" id="setReset">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        恢复默认
+      </button>
+    </div>
+    <div class="settings" id="settingsBody"></div>
+  </div>
+
+  <div class="toast-zone" id="toastZone"></div>
+
+  <!-- ============ S3 变量填值弹框 ============ -->
+  <div class="scrim" id="varScrim" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="varTitle">
+      <div class="modal-head">
+        <h2 class="modal-title" id="varTitle">填写变量</h2>
+        <p class="modal-sub" id="varSub"></p>
+      </div>
+      <div class="modal-body">
+        <div id="varFields" style="display:flex;flex-direction:column;gap:var(--sp-2)"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-name">实时预览</span>
+            <span class="spacer"></span>
+            <span style="font-size:10px;color:var(--text-3)" id="varMissing"></span>
+          </div>
+          <div class="panel-body"><div class="preview-body" id="varPreview"></div></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span style="font-size:10px;color:var(--text-3)"><span class="kbd">tab</span> 切换 · <span class="kbd">esc</span> 取消</span>
+        <span class="spacer"></span>
+        <button class="btn" id="varCopy">仅复制 <span class="kbd">⌥</span><span class="kbd">↵</span></button>
+        <button class="btn btn--primary" id="varPaste">粘贴
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 仅开发预览用：?shim=1 时在普通浏览器里装内存 shim（build.sh 不打进 dist）
+if (/shim=1/.test(location.search)) document.write('<script src="js/shim.js"><\/script>');
+</script>
+<script src="js/engine.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

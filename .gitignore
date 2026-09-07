@@ -1,0 +1,15 @@
+# 系统文件
+.DS_Store
+
+# Agent 工具与技能同步目录（非项目源码）
+.agents/
+.claude/
+.codex/
+.qoder/
+.skillshare/
+
+# 验证用截图（可由 design/ 与 plugin/ 重新生成）
+.preview/
+
+# 依赖
+node_modules/

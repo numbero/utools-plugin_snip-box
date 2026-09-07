@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snippet Box · 高保真 UX 设计稿 v1</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="sheet">
+
+  <!-- ===================== 展板头部 ===================== -->
+  <header class="sheet-head">
+    <div class="sheet-head-row">
+      <div style="flex:1;min-width:260px">
+        <h1 class="sheet-title">Snippet Box <span class="badge">阶段二 · 高保真 UX</span></h1>
+        <p class="sheet-sub">uTools 快捷片段插件 · v1 · 2026-09-06 · 依据 PRD v0.2 · 下面每个窗口都是<b>真实可交互</b>的，不是截图</p>
+      </div>
+    </div>
+
+    <div class="sheet-tools">
+      <div class="tool-group">
+        <span class="tool-label">主题</span>
+        <div class="seg" id="themeSeg">
+          <button data-v="light">浅色</button>
+          <button data-v="dark" aria-pressed="true">深色</button>
+          <button data-v="auto">跟随系统</button>
+        </div>
+      </div>
+      <div class="tool-group">
+        <span class="tool-label">窗口宽度</span>
+        <div class="seg" id="widthSeg">
+          <button data-v="640">640</button>
+          <button data-v="680" aria-pressed="true">680</button>
+          <button data-v="720">720</button>
+          <button data-v="fluid">自适应</button>
+        </div>
+      </div>
+      <div class="tool-group">
+        <span class="tool-label">上下文</span>
+        <div class="seg" id="ctxSeg">
+          <button data-v="full" aria-pressed="true">完整快照</button>
+          <button data-v="empty">快照缺失</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sheet-nav">
+      <a href="#s1">1 主列表</a>
+      <a href="#s2">2 片段编辑器</a>
+      <a href="#s3">3 变量填值</a>
+      <a href="#s4">4 设置</a>
+      <a href="#s5">5 空状态</a>
+      <a href="#tokens">6 设计令牌</a>
+    </nav>
+  </header>
+
+  <!-- ===================== S1 主列表 ===================== -->
+  <section class="screen" id="s1">
+    <div class="screen-head">
+      <div class="screen-num">1</div>
+      <div>
+        <h2 class="screen-name">主列表 · 浏览与输出</h2>
+        <p class="screen-desc">插件的主界面。左侧分组，中间片段列表，每一项下方<b>就是渲染后的真实结果</b>——这是本产品的核心视觉主张：所见即所粘。试着在搜索框打字、用 <code>↑↓</code> 移动、按 <code>Enter</code>。</p>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="screen-frame-wrap">
+        <div class="frame" data-w="680">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="titlebar-name">Snippet Box</div>
+            <div class="titlebar-tag">680 × 544</div>
+          </div>
+          <div class="viewport" id="vp1" style="height:544px">
+
+            <div class="searchbar">
+              <div class="search-field">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
+                <input id="q1" type="text" placeholder="搜索片段名称、内容或关键字…" autocomplete="off" spellcheck="false">
+                <button class="search-clear" id="clear1" hidden title="清空">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                </button>
+              </div>
+              <button class="btn btn--primary" id="newBtn1">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                新建
+              </button>
+              <button class="btn btn--icon btn--ghost" id="setBtn1" title="设置">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.8M8 12.7v1.8M14.5 8h-1.8M3.3 8H1.5M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3M12.6 12.6l-1.3-1.3M4.7 4.7L3.4 3.4" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+
+            <div class="body-row">
+              <aside class="sidebar" id="sidebar1"></aside>
+              <div class="list-pane">
+                <div class="list" id="list1" role="listbox" aria-label="片段列表" tabindex="0"></div>
+              </div>
+            </div>
+
+            <div class="toast-zone" id="toast1"></div>
+
+            <div class="statusbar">
+              <span class="ctx" id="ctxStat1"></span>
+              <span class="hints">
+                <span class="hint"><span class="kbd">↑</span><span class="kbd">↓</span> 选择</span>
+                <span class="hint"><span class="kbd">↵</span> 粘贴</span>
+                <span class="hint"><span class="kbd">⌥</span><span class="kbd">↵</span> 仅复制</span>
+                <span class="hint hint--edit"><span class="kbd">⌘</span><span class="kbd">E</span> 编辑</span>
+                <span class="hint hint--esc"><span class="kbd">esc</span> 退后台</span>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3 class="notes-title">设计要点</h3>
+        <div class="note"><span class="note-idx">1</span><span><b>列表项即预览。</b>每个片段第二行直接显示渲染结果，不用点进去就能确认占位符会输出什么。键盘选中的那一项会展开完整的<span style="color:var(--sheet-text)">「渲染结果」</span>面板。</span></div>
+        <div class="note"><span class="note-idx">2</span><span><b>占位符按来源着色</b>：<span class="tok tok--time">绿=时间</span> <span class="tok tok--clipboard">蓝=剪贴板</span> <span class="tok tok--random">紫=随机</span> <span class="tok tok--system">青=系统</span> <span class="tok tok--variable">靛=待填变量</span>。一眼看出哪部分是动态的。</span></div>
+        <div class="note"><span class="note-idx">3</span><span><b>随机值带 ↻ 标记</b>并加下划线，提示「每次输出都不同」，避免用户误以为预览值就是最终值。</span></div>
+        <div class="note"><span class="note-idx">4</span><span><b>智能排序可见化。</b>无搜索词时按 置顶 → 近 30 天使用频次 → 最近使用 排序，列表项右下角显示 <code>×84 · 21:40</code> 解释它为什么排在这里。</span></div>
+        <div class="note"><span class="note-idx">5</span><span><b>直达关键字</b>显示为紫色 <span class="pill pill--key">⚡ commit</span> 徽标；含待填变量的片段额外挂 <span class="pill pill--var">?</span>，提示直达时会降级为显窗弹表单。</span></div>
+        <div class="note"><span class="note-idx">6</span><span><b>底部状态栏常驻上下文快照信息</b>：剪贴板前若干字、当前目录、浏览器标题，并有「刷新」入口。让用户知道 <code>{{clipboard}}</code> 到底取的是哪一刻的值。</span></div>
+        <div class="note"><span class="note-idx">7</span><span>把顶部工具栏的<b>「上下文」切到「快照缺失」</b>，可以看到 <code>{{folder}}</code> <code>{{url}}</code> <code>{{clipboard}}</code> 全部降级为灰色虚线标记而不报错——这是 PRD R2 的视觉答案。</span></div>
+        <div class="note"><span class="note-idx">8</span><span><b>快捷操作栏（复制/置顶/编辑）悬停浮现</b>，悬停期间右侧徽标暂时让位；键盘选中的行操作栏常驻，徽标左移留出空间——两者永不重叠，徽标信息也不丢失。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== S2 编辑器 ===================== -->
+  <section class="screen" id="s2">
+    <div class="screen-head">
+      <div class="screen-num">2</div>
+      <div>
+        <h2 class="screen-name">片段编辑器 · 所见即所得</h2>
+        <p class="screen-desc">上方写模板，下方实时渲染。uTools 插件窗口偏窄（约 680px），所以采用<b>上下分栏</b>而非左右分栏。试着改模板内容、点「可用占位符」插入、把 <code>{{date}}</code> 改成 <code>{{date:zzz}}</code> 看错误态。</p>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="screen-frame-wrap">
+        <div class="frame" data-w="680">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="titlebar-name">Snippet Box — 编辑片段</div>
+            <div class="titlebar-tag">setExpendHeight(620)</div>
+          </div>
+          <div class="viewport" id="vp2" style="height:620px">
+
+            <div class="ed-head">
+              <button class="btn btn--icon btn--ghost" id="backBtn2" title="返回列表">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+              </button>
+              <span class="ed-title" id="edTitle2">编辑片段</span>
+              <span class="spacer"></span>
+              <button class="btn btn--ghost" id="cancelBtn2">取消</button>
+              <button class="btn btn--primary" id="saveBtn2">保存 <span class="kbd" style="margin-left:2px">⌘↵</span></button>
+            </div>
+
+            <div class="editor">
+              <div class="ed-body">
+
+                <div class="ed-meta">
+                  <div class="field">
+                    <label class="field-label" for="edName">名称</label>
+                    <input class="input" id="edName" type="text" value="git commit 模板" spellcheck="false">
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="edGroup">分组</label>
+                    <select class="select" id="edGroup">
+                      <option value="">未分组</option>
+                      <option value="g-work" selected>工作</option>
+                      <option value="g-life">个人</option>
+                      <option value="g-reply">回复话术</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="edKey">搜索关键字</label>
+                    <input class="input input--mono" id="edKey" type="text" value="commit" spellcheck="false" placeholder="英文关键字，弥补无拼音搜索">
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="edDirectKey">直达关键字</label>
+                    <input class="input input--mono" id="edDirectKey" type="text" value="commit" spellcheck="false" disabled>
+                  </div>
+                </div>
+
+                <div class="ed-toggles">
+                  <div class="ed-toggle">
+                    <button class="checkbox" id="tgPin" role="switch" aria-checked="true" title="置顶">
+                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>
+                    </button>
+                    <span>置顶</span>
+                  </div>
+                  <div class="ed-toggle">
+                    <button class="switch" id="tgDirect" role="switch" aria-checked="true"></button>
+                    <span>开启直达关键字</span>
+                  </div>
+                  <span id="directWarn" class="pill pill--var" style="margin-left:auto">含待填变量 · 直达时降级为显窗</span>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-head" style="position:relative">
+                    <span class="panel-name">模板</span>
+                    <span class="spacer"></span>
+                    <button class="btn btn--sm btn--ghost" id="phBtn">
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.5 3.5L2 8l3.5 4.5M10.5 3.5L14 8l-3.5 4.5"/></svg>
+                      可用占位符
+                    </button>
+                    <div class="pop" id="phPop" hidden></div>
+                  </div>
+                  <div class="panel-body tpl-editor">
+                    <div class="tpl-lines" id="tplLines"></div>
+                    <textarea class="textarea textarea--tpl" id="tpl" rows="6" spellcheck="false"></textarea>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-head">
+                    <span class="panel-name">实时预览</span>
+                    <span style="font-size:10px;color:var(--text-3)">这就是回车后会输出的内容</span>
+                    <span class="spacer"></span>
+                    <button class="btn btn--sm btn--ghost" id="refreshCtx2" title="重新抓取上下文快照">
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 1.5V4H11"/></svg>
+                      刷新上下文
+                    </button>
+                  </div>
+                  <div class="panel-body">
+                    <div class="preview-body" id="preview2"></div>
+                    <div class="issue-bar" id="issues2"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="toast-zone" id="toast2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3 class="notes-title">设计要点</h3>
+        <div class="note"><span class="note-idx">1</span><span><b>上下分栏而非左右。</b>680px 宽减去内边距后左右分栏每侧只有约 300px，写多行模板会很难受。上下分栏让模板区拿到全部宽度。</span></div>
+        <div class="note"><span class="note-idx">2</span><span><b>预览区就是输出本身。</b>标题下方直接写明「这就是回车后会输出的内容」，消除「预览和实际输出是否一致」的疑虑。着色仅存在于预览，粘贴出去的是纯文本。</span></div>
+        <div class="note"><span class="note-idx">3</span><span><b>四态错误反馈</b>在预览下方汇总：<span class="issue issue--unknown">未知占位符</span> <span class="issue issue--invalid">参数非法</span> <span class="issue issue--missing">上下文缺失</span> <span class="issue issue--var">待填变量</span>。<b>都不阻断保存</b>（PRD FR-43/44）。</span></div>
+        <div class="note"><span class="note-idx">4</span><span><b>「可用占位符」是弹层</b>而非侧栏，按分类列出全部 60+ 个，点击插入到光标处。它同时充当文档，用户不必去读 PRD。</span></div>
+        <div class="note"><span class="note-idx">5</span><span><b>两个关键字分开</b>：「搜索关键字」只在插件内过滤用；「直达关键字」会 <code>setFeature</code> 注册进 uTools 全局指令空间，所以默认关闭、开启时才解锁输入框。</span></div>
+        <div class="note"><span class="note-idx">6</span><span><b>含待填变量时给出降级提示</b>（右上紫色胶囊），对应 FR-77：<code>mainHide</code> 静默直达无法弹表单，必须显窗。</span></div>
+        <div class="note"><span class="note-idx">7</span><span><b>编辑器需要 620px 高</b>，超过 <code>pluginSetting.height</code> 默认的 544。阶段三进入编辑器时调 <code>setExpendHeight(620)</code>，返回时收回。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== S3 变量填值 ===================== -->
+  <section class="screen" id="s3">
+    <div class="screen-head">
+      <div class="screen-num">3</div>
+      <div>
+        <h2 class="screen-name">变量填值 · 输出前的最后一眼</h2>
+        <p class="screen-desc">命中含 <code>{{?变量}}</code> 的片段时，不直接输出，而是弹出这个小表单。左边是列表被遮住的背景，说明它是<b>覆盖在主界面上的模态</b>，不是新窗口。在输入框里打字，下方预览会同步变化。</p>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="screen-frame-wrap">
+        <div class="frame" data-w="680">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="titlebar-name">Snippet Box — 填写变量</div>
+            <div class="titlebar-tag">模态</div>
+          </div>
+          <div class="viewport" id="vp3" style="height:440px">
+            <div class="searchbar" style="opacity:.4;pointer-events:none">
+              <div class="search-field">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
+                <input type="text" value="工单" disabled>
+              </div>
+            </div>
+            <div class="body-row" style="opacity:.28;pointer-events:none">
+              <aside class="sidebar" id="sidebar3"></aside>
+              <div class="list-pane"><div class="list" id="list3"></div></div>
+            </div>
+
+            <div class="scrim">
+              <div class="modal" role="dialog" aria-labelledby="modalTitle3">
+                <div class="modal-head">
+                  <h3 class="modal-title" id="modalTitle3">工单已修复回复</h3>
+                  <p class="modal-sub">这个片段有 3 个待填变量 · 填完按 <span class="kbd">⌘</span><span class="kbd">↵</span> 输出</p>
+                </div>
+                <div class="modal-body">
+                  <div id="varFields3"></div>
+                  <div class="panel">
+                    <div class="panel-head">
+                      <span class="panel-name">实时预览</span>
+                      <span class="spacer"></span>
+                      <span style="font-size:10px;color:var(--text-3)" id="varCount3"></span>
+                    </div>
+                    <div class="preview-body" id="preview3" style="min-height:120px"></div>
+                  </div>
+                </div>
+                <div class="modal-foot">
+                  <span style="font-size:10px;color:var(--text-3)"><span class="kbd">tab</span> 切换 · <span class="kbd">esc</span> 取消</span>
+                  <span class="spacer"></span>
+                  <button class="btn" id="copyBtn3">仅复制 <span class="kbd">⌥↵</span></button>
+                  <button class="btn btn--primary" id="pasteBtn3">
+                    粘贴
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="toast-zone" id="toast3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3 class="notes-title">设计要点</h3>
+        <div class="note"><span class="note-idx">1</span><span><b>字段顺序 = 模板中首次出现顺序</b>，符合阅读预期。有默认值的字段预填，用户可以直接跳过或接着打（如 <code>{{?工单号=T-}}</code> 预填 <code>T-</code>）。</span></div>
+        <div class="note"><span class="note-idx">2</span><span><b>预览常驻且实时</b>。这是整个表单存在的意义——用户看着最终结果打字，而不是填完才发现拼错了。</span></div>
+        <div class="note"><span class="note-idx">3</span><span><b>未填不阻断。</b>空字段用虚线边框 + 灰色占位提示，<code>⌘↵</code> 照样能输出（替换为空串），对应 FR-76。</span></div>
+        <div class="note"><span class="note-idx">4</span><span><b>两个输出按钮</b>与列表态语义一致：主按钮「粘贴 →」、次按钮「仅复制」。用户在任何界面学到的操作在这里都成立。</span></div>
+        <div class="note"><span class="note-idx">5</span><span><b>变量值不递归解析</b>（FR-78）：在字段里填 <code>{{date}}</code>，预览里就是字面量 <code>{{date}}</code> 六个字符。可以现在试一下。</span></div>
+        <div class="note"><span class="note-idx">6</span><span>模态宽度 <code>min(460px, 100%-40px)</code>，在 640px 窗口下也不会溢出。背景列表降透明度而非模糊掉，保留位置感。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== S4 设置 ===================== -->
+  <section class="screen" id="s4">
+    <div class="screen-head">
+      <div class="screen-num">4</div>
+      <div>
+        <h2 class="screen-name">设置</h2>
+        <p class="screen-desc">全部设置集中在一页，按「输出 → 外观 → 语法 → 数据 → 关于」分组。开关都是可点的。</p>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="screen-frame-wrap">
+        <div class="frame" data-w="680">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="titlebar-name">Snippet Box — 设置</div>
+            <div class="titlebar-tag">680 × 544</div>
+          </div>
+          <div class="viewport" style="height:544px">
+            <div class="ed-head">
+              <button class="btn btn--icon btn--ghost" title="返回">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+              </button>
+              <span class="ed-title">设置</span>
+              <span class="spacer"></span>
+              <button class="btn btn--sm btn--ghost">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 1.5V4H11"/></svg>
+                恢复默认
+              </button>
+            </div>
+
+            <div class="settings">
+
+              <div class="set-sec">
+                <h3 class="set-sec-title">输出</h3>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">默认输出方式</div>
+                    <div class="set-desc">回车时是把内容粘进上一个应用，还是只复制到剪贴板</div>
+                  </div>
+                  <div class="set-ctl">
+                    <select class="select" id="setOut">
+                      <option selected>自动粘贴到上一个应用</option>
+                      <option>仅复制到剪贴板</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">粘贴模式</div>
+                    <div class="set-desc">合成粘贴走 <code>hideMainWindowPasteText</code>；虚拟机窗口、安全输入框拒绝合成粘贴时改逐字输入 <code>hideMainWindowTypeString</code></div>
+                  </div>
+                  <div class="set-ctl">
+                    <select class="select" id="setPaste">
+                      <option selected>剪贴板粘贴 · pasteText</option>
+                      <option>逐字输入 · typeString</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">修饰键临时反向</div>
+                    <div class="set-desc"><span class="kbd">⌥</span><span class="kbd">↵</span> 执行与上面相反的动作</div>
+                  </div>
+                  <div class="set-ctl"><button class="switch" role="switch" aria-checked="true" data-toggle></button></div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">直达关键字统一前缀</div>
+                    <div class="set-desc">避免片段关键字污染 uTools 全局指令空间，如设为 <code>;</code> 则 <code>sign</code> 注册为 <code>;sign</code></div>
+                  </div>
+                  <div class="set-ctl">
+                    <input class="input input--mono" style="width:74px" placeholder="关闭" value="">
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-sec">
+                <h3 class="set-sec-title">外观</h3>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">主题</div>
+                    <div class="set-desc">跟随系统时会在 macOS 切换深浅色的瞬间同步</div>
+                  </div>
+                  <div class="set-ctl">
+                    <div class="seg" id="setTheme">
+                      <button data-v="auto" aria-pressed="true">跟随系统</button>
+                      <button data-v="light">浅色</button>
+                      <button data-v="dark">深色</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">列表项显示渲染预览</div>
+                    <div class="set-desc">关闭后列表更紧凑，但看不到占位符的实际输出</div>
+                  </div>
+                  <div class="set-ctl"><button class="switch" role="switch" aria-checked="true" data-toggle></button></div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">预览中给占位符着色</div>
+                    <div class="set-desc">按来源分类上色，仅影响预览，不影响输出内容</div>
+                  </div>
+                  <div class="set-ctl"><button class="switch" role="switch" aria-checked="true" data-toggle></button></div>
+                </div>
+              </div>
+
+              <div class="set-sec">
+                <h3 class="set-sec-title">占位符语法</h3>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">定界符</div>
+                    <div class="set-desc">片段内容本身就是 Vue / Handlebars 模板时，换成 <code>${ }</code> 或 <code>[[ ]]</code> 可避免撞车</div>
+                  </div>
+                  <div class="set-ctl">
+                    <select class="select" id="setDelim" style="width:110px">
+                      <option value="mustache" selected>{{ }}</option>
+                      <option value="dollar">${ }</option>
+                      <option value="bracket">[[ ]]</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">转义写法</div>
+                    <div class="set-desc">写 <code>\{{</code> 即输出字面量 <code>{{</code>，无需开启任何开关</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-sec">
+                <h3 class="set-sec-title">数据</h3>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">导出 / 导入 JSON</div>
+                    <div class="set-desc">含分组、片段、设置与版本号。导入按 id 去重，冲突时导入为副本并报告新增/跳过条数</div>
+                  </div>
+                  <div class="set-ctl">
+                    <button class="btn btn--sm">导出…</button>
+                    <button class="btn btn--sm">导入…</button>
+                  </div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">清空示例片段</div>
+                    <div class="set-desc">移除首次启动灌入的 4 条演示片段，不影响你自己新建的内容</div>
+                  </div>
+                  <div class="set-ctl"><button class="btn btn--sm">清空</button></div>
+                </div>
+                <div class="set-row" style="display:block">
+                  <div class="callout callout--warn" style="margin-top:2px">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2.2l5.6 9.9H2.4L8 2.2z"/><path d="M8 6.2v2.6M8 10.6v.1"/></svg>
+                    <span>片段存储在 <code style="background:none;padding:0;color:inherit">utools.db</code>，<b>可能随 uTools 账号云同步</b>。请勿把密码、密钥、令牌存为片段。</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-sec">
+                <h3 class="set-sec-title">关于</h3>
+                <div class="about-grid">
+                  <div class="about-cell"><div class="about-k">插件版本</div><div class="about-v">1.0.0</div></div>
+                  <div class="about-cell"><div class="about-k">uTools</div><div class="about-v">5.2.0</div></div>
+                  <div class="about-cell"><div class="about-k">片段总数</div><div class="about-v">12</div></div>
+                  <div class="about-cell"><div class="about-k">平台</div><div class="about-v">macOS · arm64</div></div>
+                </div>
+                <div class="set-row">
+                  <div class="set-main">
+                    <div class="set-name">遇到问题？</div>
+                    <div class="set-desc">复制诊断信息（版本 / 平台 / 片段数 / 最近一次错误），粘贴给我即可，不用截图</div>
+                  </div>
+                  <div class="set-ctl"><button class="btn btn--sm">复制诊断信息</button></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3 class="notes-title">设计要点</h3>
+        <div class="note"><span class="note-idx">1</span><span><b>每个设置项都带一句「为什么」</b>，而不是只给一个开关名。比如粘贴模式那行直接说明「虚拟机窗口、安全输入框拒绝合成粘贴」，用户在遇到问题时能自己找到解法。</span></div>
+        <div class="note"><span class="note-idx">2</span><span><b>API 名直接写进描述</b>（<code>hideMainWindowPasteText</code>），方便你反馈问题时我们说同一种语言。</span></div>
+        <div class="note"><span class="note-idx">3</span><span><b>云同步风险常驻警示</b>（琥珀色卡片），对应 PRD 风险 R4。这是安全相关的知情同意，不该藏在文档里。</span></div>
+        <div class="note"><span class="note-idx">4</span><span><b>「复制诊断信息」</b>把问题反馈成本压到一次粘贴，替代截图和描述复现步骤。</span></div>
+        <div class="note"><span class="note-idx">5</span><span>定界符切换<b>只影响解析不影响存储</b>，所以随时可切、可随时切回，片段内容不会被改写。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== S5 空状态 ===================== -->
+  <section class="screen" id="s5">
+    <div class="screen-head">
+      <div class="screen-num">5</div>
+      <div>
+        <h2 class="screen-name">首次启动 · 空状态</h2>
+        <p class="screen-desc">第一次打开时没有片段。这里用一段<b>会动的实例</b>代替干巴巴的「暂无数据」——让用户在读完之前就已经理解占位符是什么。</p>
+      </div>
+    </div>
+
+    <div class="screen-body">
+      <div class="screen-frame-wrap">
+        <div class="frame" data-w="680">
+          <div class="titlebar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="titlebar-name">Snippet Box</div>
+            <div class="titlebar-tag">首次启动</div>
+          </div>
+          <div class="viewport" style="height:460px">
+            <div class="searchbar">
+              <div class="search-field">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
+                <input type="text" placeholder="搜索片段…" disabled>
+              </div>
+              <button class="btn btn--primary">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                新建
+              </button>
+            </div>
+            <div class="empty">
+              <div class="empty-art">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.5v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9"/><path d="M2 8.5l2.2-4A2 2 0 0 1 6 3.4h12a2 2 0 0 1 1.8 1.1l2.2 4"/><path d="M2 8.5h6.5l1 2h5l1-2H22"/></svg>
+              </div>
+              <h3 class="empty-title">还没有片段</h3>
+              <p class="empty-desc">片段是可以带占位符的文本模板。写下模板，占位符会在你浏览时<b>就渲染成真实值</b>：</p>
+              <div class="empty-demo" id="emptyDemo"></div>
+              <div class="empty-actions">
+                <button class="btn btn--primary">
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                  新建第一个片段
+                </button>
+                <button class="btn">导入 4 条示例</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3 class="notes-title">设计要点</h3>
+        <div class="note"><span class="note-idx">1</span><span><b>用活例子教学。</b>上面那块灰底区域是真实渲染的：左边模板、右边结果，每 2 秒重渲染一次，<code>{{time}}</code> 的秒数会真的在跳。用户不需要读文档就懂了。</span></div>
+        <div class="note"><span class="note-idx">2</span><span><b>两个出口</b>：「新建第一个片段」是主路径，「导入 4 条示例」给想先看效果的人。示例可在设置里一键清空（PRD §13 Q4）。</span></div>
+        <div class="note"><span class="note-idx">3</span><span>空状态<b>不显示侧栏分组</b>——此时分组是空的，显示出来只是噪音。</span></div>
+        <div class="note"><span class="note-idx">4</span><span>搜索框保留但禁用，维持界面骨架一致性，切到有数据时不会跳版。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 设计令牌 ===================== -->
+  <section class="screen" id="tokens">
+    <div class="screen-head">
+      <div class="screen-num">6</div>
+      <div>
+        <h2 class="screen-name">设计令牌</h2>
+        <p class="screen-desc">全部颜色走 CSS 变量，切换主题只改根元素 <code>data-theme</code>。下面色块会跟随顶部工具栏的主题开关实时变化。</p>
+      </div>
+    </div>
+
+    <div class="token-grid" id="tokenGrid"></div>
+
+    <h3 class="notes-title" style="margin:var(--sp-6) 0 var(--sp-3)">占位符着色图例</h3>
+    <div class="legend">
+      <span class="legend-item"><span class="tok tok--time">2026-09-06</span> 时间</span>
+      <span class="legend-item"><span class="tok tok--clipboard">已复制的文本</span> 剪贴板</span>
+      <span class="legend-item"><span class="tok tok--random tok--volatile">a3e697fc</span> 随机（每次不同）</span>
+      <span class="legend-item"><span class="tok tok--system">numbero</span> 系统上下文</span>
+      <span class="legend-item"><span class="tok tok--variable tok--pending">{{?姓名}}</span> 待填变量</span>
+      <span class="legend-item"><span class="tok tok--unknown">{{foobar}}</span> 未知占位符</span>
+      <span class="legend-item"><span class="tok tok--invalid">{{date:zzz}}</span> 参数非法</span>
+      <span class="legend-item"><span class="tok tok--missing">（空）</span> 上下文缺失</span>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/data.js"></script>
+<script src="js/prototype.js"></script>
+</body>
+</html>

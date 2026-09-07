@@ -1,0 +1,870 @@
+/* ==========================================================================
+   Snippet Box · 主题选型画廊（阶段二补充 · 仅供选型，不进 dist）
+   - 每个 [data-swatch] 就是一套完整设计令牌，选中后原样搬进 plugin/css/tokens.css
+   - 深色变体只覆写与浅色不同的令牌（同元素上按特异性生效）
+   - 画廊外壳颜色写死，不吃任何主题令牌，避免被预览主题污染
+   ========================================================================== */
+
+/* ---------- 画廊外壳（覆盖 app.css 的 body/viewport 假设） ---------- */
+html, body { height: auto; }
+body {
+  overflow: auto !important;
+  background: #0C0D10 !important;
+  color: #E7E8EC !important;
+  font-family: var(--font-ui);
+  padding: 0 0 80px;
+}
+.gal { max-width: 1560px; margin: 0 auto; padding: 0 28px; }
+
+.gal-head {
+  position: sticky; top: 0; z-index: 90;
+  background: rgba(12, 13, 16, .86);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  margin: 0 -28px 24px; padding: 16px 28px;
+}
+.gal-title { font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin: 0; color: #FFF; }
+.gal-sub { font-size: 12px; color: #8A8D97; margin: 4px 0 0; line-height: 17px; }
+.gal-sub b { color: #C9CCD4; font-weight: 600; }
+.gal-tools { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.gpick {
+  height: 26px; padding: 0 11px; border-radius: 7px; font-size: 12px; font-weight: 550;
+  color: #B9BCC5; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .10);
+  transition: all .12s;
+}
+.gpick:hover { background: rgba(255, 255, 255, .11); color: #FFF; }
+.gpick[aria-pressed="true"] { background: #FFF; border-color: #FFF; color: #14151A; font-weight: 650; }
+.gal-sep { width: 1px; height: 18px; background: rgba(255, 255, 255, .12); margin: 0 4px; }
+.gal-picked {
+  margin-left: auto; font-size: 12px; color: #8A8D97;
+  display: flex; align-items: center; gap: 7px;
+}
+.gal-picked b { color: #FFF; font-weight: 650; }
+.gal-picked .dotmark { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; }
+
+.gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(540px, 1fr)); gap: 20px; }
+body.single .gal-grid { grid-template-columns: minmax(0, 680px); justify-content: center; }
+body.single .win { width: 680px; }
+
+.card {
+  border: 1px solid rgba(255, 255, 255, .09); border-radius: 14px; overflow: hidden;
+  background: #141519; transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.card:hover { border-color: rgba(255, 255, 255, .17); }
+.card.is-picked {
+  border-color: #4ADE80;
+  box-shadow: 0 0 0 1px #4ADE80, 0 18px 44px -18px rgba(74, 222, 128, .45);
+}
+.card-head { padding: 13px 15px 12px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.card-row1 { display: flex; align-items: baseline; gap: 9px; }
+.card-no {
+  font-family: var(--font-mono); font-size: 11px; color: #6E717B; flex: none;
+  letter-spacing: .02em;
+}
+.card-name { font-size: 14px; font-weight: 640; color: #FFF; letter-spacing: -.01em; }
+.card-en { font-size: 11px; color: #767A85; font-family: var(--font-mono); letter-spacing: .02em; }
+.card-tag-now {
+  font-size: 10px; font-weight: 650; color: #0C0D10; background: #8A8D97;
+  padding: 1px 6px; border-radius: 999px; letter-spacing: .02em;
+}
+.card-row2 { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.card-why { font-size: 11.5px; color: #9CA0AA; line-height: 17px; flex: 1; min-width: 200px; }
+.chips { display: flex; gap: 4px; flex: none; }
+.chip {
+  width: 15px; height: 15px; border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, .16);
+}
+.card-row3 { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.tags { display: flex; gap: 5px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.tag {
+  font-size: 10px; color: #9CA0AA; background: rgba(255, 255, 255, .055);
+  border: 1px solid rgba(255, 255, 255, .08); padding: 2px 7px; border-radius: 999px;
+  white-space: nowrap;
+}
+.gtoggle { display: inline-flex; padding: 2px; gap: 2px; background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .09); border-radius: 8px; flex: none; }
+.gtoggle button {
+  font-size: 11px; padding: 3px 10px; border-radius: 6px; color: #9CA0AA;
+  transition: all .12s; white-space: nowrap;
+}
+.gtoggle button:hover { color: #FFF; }
+.gtoggle button[aria-pressed="true"] { background: #FFF; color: #14151A; font-weight: 650; }
+.gpick-card {
+  flex: none; height: 24px; padding: 0 11px; border-radius: 7px; font-size: 11px; font-weight: 600;
+  color: #14151A; background: #4ADE80; border: 1px solid transparent; transition: all .12s;
+}
+.gpick-card:hover { background: #6EE79A; }
+.card.is-picked .gpick-card { background: transparent; color: #4ADE80; border-color: #4ADE80; }
+
+/* 预览窗口容器：吃主题令牌 */
+.win-wrap {
+  padding: 16px; background:
+    radial-gradient(900px 400px at 12% -20%, rgba(255, 255, 255, .055) 0%, transparent 60%),
+    #0F1013;
+  display: flex; justify-content: center;
+}
+.win {
+  width: 100%; max-width: 680px; height: 424px; position: relative; overflow: hidden;
+  border-radius: var(--r-xl, 14px);
+  box-shadow: var(--shadow-frame, 0 24px 60px -18px rgba(0, 0, 0, .6));
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, .2);
+}
+.win .viewport { height: 100%; border-radius: inherit; overflow: hidden; }
+/* 静态快照：列表超出窗口高度时裁切，不允许内层被滚动 */
+.win .list { overflow: hidden; }
+body.single .win { height: 544px; }
+
+.gal-foot {
+  margin-top: 26px; padding: 16px 18px; border-radius: 12px;
+  background: #141519; border: 1px solid rgba(255, 255, 255, .09);
+  font-size: 12px; color: #9CA0AA; line-height: 20px;
+}
+.gal-foot b { color: #E7E8EC; font-weight: 600; }
+.gal-foot code {
+  font-family: var(--font-mono); font-size: 11px; color: #C9CCD4;
+  background: rgba(255, 255, 255, .07); padding: 1px 5px; border-radius: 4px;
+}
+
+/* ==========================================================================
+   #00 · 当前主题（对照组）Indigo Native
+   ========================================================================== */
+[data-swatch="current"] {
+  color-scheme: light;
+  --surface: #FFFFFF; --surface-2: #F6F6F8; --surface-3: #EFEFF2;
+  --surface-sunken: #FAFAFB; --titlebar: #F2F2F5;
+  --border: rgba(0,0,0,.085); --border-strong: rgba(0,0,0,.15); --border-faint: rgba(0,0,0,.05);
+  --text: #1A1A1E; --text-2: #5D5D66; --text-3: #94949D; --text-inv: #FFFFFF;
+  --accent: #5B6BD6; --accent-strong: #4857C4; --accent-soft: rgba(91,107,214,.10);
+  --accent-soft-2: rgba(91,107,214,.18); --accent-border: rgba(91,107,214,.32);
+  --hover: rgba(0,0,0,.035); --selected: rgba(91,107,214,.09);
+  --danger: #CE3B3B; --danger-soft: rgba(206,59,59,.10);
+  --success: #1F8A54; --success-soft: rgba(31,138,84,.10);
+  --warning: #B0740F; --warning-soft: rgba(176,116,15,.12); --warning-border: rgba(176,116,15,.28);
+  --tok-time-fg: #1C7A4C;    --tok-time-bg: rgba(31,138,84,.11);
+  --tok-clip-fg: #2458B8;    --tok-clip-bg: rgba(37,99,201,.11);
+  --tok-rand-fg: #7E3DBE;    --tok-rand-bg: rgba(139,70,201,.11);
+  --tok-sys-fg: #0C6E77;     --tok-sys-bg: rgba(14,124,134,.11);
+  --tok-var-fg: #4857C4;     --tok-var-bg: rgba(91,107,214,.13);
+  --tok-unknown-fg: #C0332F; --tok-unknown-bg: rgba(206,59,59,.11);
+  --tok-invalid-fg: #9C6508; --tok-invalid-bg: rgba(176,116,15,.14);
+  --tok-missing-fg: #8A8A93; --tok-missing-bg: rgba(0,0,0,.045);
+  --shadow-frame: 0 24px 60px -18px rgba(20,20,30,.38), 0 2px 8px rgba(20,20,30,.10);
+  --shadow-pop: 0 12px 32px -8px rgba(20,20,30,.28), 0 0 0 1px rgba(0,0,0,.06);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,.05);
+  --surface-translucent: rgba(255,255,255,.90);
+}
+[data-swatch="current"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #1E1E22; --surface-2: #19191D; --surface-3: #141417;
+  --surface-sunken: #1A1A1E; --titlebar: #232327;
+  --border: rgba(255,255,255,.085); --border-strong: rgba(255,255,255,.17); --border-faint: rgba(255,255,255,.05);
+  --text: #ECECEF; --text-2: #A3A3AD; --text-3: #6D6D77; --text-inv: #14141A;
+  --accent: #8290F5; --accent-strong: #9BA7F8; --accent-soft: rgba(130,144,245,.16);
+  --accent-soft-2: rgba(130,144,245,.26); --accent-border: rgba(130,144,245,.40);
+  --hover: rgba(255,255,255,.05); --selected: rgba(130,144,245,.14);
+  --danger: #F2736C; --danger-soft: rgba(242,115,108,.15);
+  --success: #5CC98C; --success-soft: rgba(92,201,140,.15);
+  --warning: #E3AC4A; --warning-soft: rgba(227,172,74,.15); --warning-border: rgba(227,172,74,.32);
+  --tok-time-fg: #6BD39A;    --tok-time-bg: rgba(92,201,140,.16);
+  --tok-clip-fg: #7FB2F5;    --tok-clip-bg: rgba(111,168,240,.16);
+  --tok-rand-fg: #C79BF7;    --tok-rand-bg: rgba(195,150,245,.16);
+  --tok-sys-fg: #62CCD8;     --tok-sys-bg: rgba(86,199,210,.16);
+  --tok-var-fg: #9BA7F8;     --tok-var-bg: rgba(130,144,245,.20);
+  --tok-unknown-fg: #F5837C; --tok-unknown-bg: rgba(242,115,108,.15);
+  --tok-invalid-fg: #EBB95F; --tok-invalid-bg: rgba(227,172,74,.15);
+  --tok-missing-fg: #7A7A84; --tok-missing-bg: rgba(255,255,255,.05);
+  --shadow-frame: 0 24px 60px -18px rgba(0,0,0,.8), 0 2px 8px rgba(0,0,0,.5);
+  --shadow-pop: 0 12px 32px -8px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.08);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,.3);
+  --surface-translucent: rgba(30,30,34,.90);
+}
+
+/* ==========================================================================
+   #01 · 白瓷 Porcelain —— 当前主题的精致升级版：更冷的中性灰、更大圆角、
+        双层柔和阴影、选中态用整行浅色而非左侧色条
+   ========================================================================== */
+[data-swatch="porcelain"] {
+  color-scheme: light;
+  --surface: #FFFFFF; --surface-2: #FAFAFC; --surface-3: #F1F2F6;
+  --surface-sunken: #F8F9FB; --titlebar: #FCFCFD;
+  --border: rgba(18,22,38,.065); --border-strong: rgba(18,22,38,.13); --border-faint: rgba(18,22,38,.035);
+  --text: #15171E; --text-2: #565B67; --text-3: #9298A4; --text-inv: #FFFFFF;
+  --accent: #4B57C9; --accent-strong: #3C48B2; --accent-soft: rgba(75,87,201,.085);
+  --accent-soft-2: rgba(75,87,201,.15); --accent-border: rgba(75,87,201,.26);
+  --hover: rgba(18,22,38,.03); --selected: rgba(75,87,201,.065);
+  --danger: #D14343; --danger-soft: rgba(209,67,67,.09);
+  --success: #1E8A5F; --success-soft: rgba(30,138,95,.09);
+  --warning: #A9761A; --warning-soft: rgba(169,118,26,.11); --warning-border: rgba(169,118,26,.26);
+  --tok-time-fg: #17795A;    --tok-time-bg: rgba(30,138,95,.10);
+  --tok-clip-fg: #2B5FBF;    --tok-clip-bg: rgba(43,95,191,.10);
+  --tok-rand-fg: #7B41C4;    --tok-rand-bg: rgba(123,65,196,.10);
+  --tok-sys-fg: #0E6C80;     --tok-sys-bg: rgba(14,108,128,.10);
+  --tok-var-fg: #4B57C9;     --tok-var-bg: rgba(75,87,201,.11);
+  --tok-unknown-fg: #C43C3C; --tok-unknown-bg: rgba(209,67,67,.10);
+  --tok-invalid-fg: #9A6A12; --tok-invalid-bg: rgba(169,118,26,.13);
+  --tok-missing-fg: #8E94A0; --tok-missing-bg: rgba(18,22,38,.04);
+  --shadow-frame: 0 32px 68px -26px rgba(16,20,42,.34), 0 2px 6px rgba(16,20,42,.06);
+  --shadow-pop: 0 18px 44px -14px rgba(16,20,42,.22), 0 0 0 1px rgba(16,20,42,.05);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 2px rgba(16,20,42,.035);
+  --surface-translucent: rgba(255,255,255,.92);
+  --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+}
+[data-swatch="porcelain"] .list-item[aria-selected="true"]::before { width: 2px; opacity: .55; }
+[data-swatch="porcelain"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #16171C; --surface-2: #121318; --surface-3: #1E2027;
+  --surface-sunken: #141519; --titlebar: #1A1C22;
+  --border: rgba(255,255,255,.075); --border-strong: rgba(255,255,255,.15); --border-faint: rgba(255,255,255,.04);
+  --text: #EDEEF3; --text-2: #A0A5B1; --text-3: #6A6F7C; --text-inv: #101116;
+  --accent: #93A0FF; --accent-strong: #A6B1FF; --accent-soft: rgba(147,160,255,.14);
+  --accent-soft-2: rgba(147,160,255,.24); --accent-border: rgba(147,160,255,.36);
+  --hover: rgba(255,255,255,.045); --selected: rgba(147,160,255,.12);
+  --danger: #F4776F; --danger-soft: rgba(244,119,111,.14);
+  --success: #56CE96; --success-soft: rgba(86,206,150,.14);
+  --warning: #E0B15E; --warning-soft: rgba(224,177,94,.14); --warning-border: rgba(224,177,94,.30);
+  --tok-time-fg: #63D3A2;    --tok-time-bg: rgba(86,206,150,.15);
+  --tok-clip-fg: #82B4F7;    --tok-clip-bg: rgba(130,180,247,.15);
+  --tok-rand-fg: #C6A2F6;    --tok-rand-bg: rgba(198,162,246,.15);
+  --tok-sys-fg: #63CBD9;     --tok-sys-bg: rgba(99,203,217,.15);
+  --tok-var-fg: #9BA7FF;     --tok-var-bg: rgba(147,160,255,.18);
+  --tok-unknown-fg: #F68880; --tok-unknown-bg: rgba(244,119,111,.14);
+  --tok-invalid-fg: #E7BC6C; --tok-invalid-bg: rgba(224,177,94,.14);
+  --tok-missing-fg: #767B87; --tok-missing-bg: rgba(255,255,255,.05);
+  --shadow-frame: 0 32px 68px -26px rgba(0,0,0,.85), 0 2px 6px rgba(0,0,0,.5);
+  --shadow-pop: 0 18px 44px -14px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.07);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -1px 2px rgba(0,0,0,.25);
+  --surface-translucent: rgba(22,23,28,.92);
+}
+
+/* ==========================================================================
+   #02 · 极光玻璃 Aurora Glass —— 半透明分层 + 背景辉光，侧栏与标题栏
+        走渐变，焦点环发光。深色为默认态
+   ========================================================================== */
+[data-swatch="aurora"] {
+  color-scheme: dark;
+  --surface: rgba(23,26,42,.62); --surface-2: rgba(17,20,33,.58); --surface-3: rgba(255,255,255,.055);
+  --surface-sunken: rgba(10,12,22,.42); --titlebar: rgba(30,34,54,.6);
+  --border: rgba(255,255,255,.09); --border-strong: rgba(255,255,255,.18); --border-faint: rgba(255,255,255,.05);
+  --text: #EDF1FA; --text-2: #A8B1C9; --text-3: #6E7893; --text-inv: #0A0D18;
+  --accent: #67E3F5; --accent-strong: #8AEAF8; --accent-soft: rgba(103,227,245,.14);
+  --accent-soft-2: rgba(103,227,245,.24); --accent-border: rgba(103,227,245,.36);
+  --hover: rgba(255,255,255,.06); --selected: rgba(124,140,255,.20);
+  --danger: #FF8A80; --danger-soft: rgba(255,138,128,.15);
+  --success: #6EE7A8; --success-soft: rgba(110,231,168,.15);
+  --warning: #FFCE6B; --warning-soft: rgba(255,206,107,.15); --warning-border: rgba(255,206,107,.32);
+  --tok-time-fg: #6EE7A8;    --tok-time-bg: rgba(110,231,168,.15);
+  --tok-clip-fg: #7FB6FF;    --tok-clip-bg: rgba(127,182,255,.16);
+  --tok-rand-fg: #D2A6FF;    --tok-rand-bg: rgba(210,166,255,.16);
+  --tok-sys-fg: #67E3F5;     --tok-sys-bg: rgba(103,227,245,.15);
+  --tok-var-fg: #A5B4FF;     --tok-var-bg: rgba(124,140,255,.20);
+  --tok-unknown-fg: #FF9B91; --tok-unknown-bg: rgba(255,138,128,.15);
+  --tok-invalid-fg: #FFCE6B; --tok-invalid-bg: rgba(255,206,107,.15);
+  --tok-missing-fg: #7C86A0; --tok-missing-bg: rgba(255,255,255,.06);
+  --shadow-frame: 0 30px 70px -22px rgba(4,6,16,.9), 0 0 0 1px rgba(255,255,255,.08);
+  --shadow-pop: 0 20px 48px -14px rgba(4,6,16,.8), 0 0 0 1px rgba(255,255,255,.12);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.06);
+  --surface-translucent: rgba(20,23,38,.82);
+  --r-xs: 4px; --r-sm: 7px; --r-md: 9px; --r-lg: 13px; --r-xl: 17px;
+}
+[data-swatch="aurora"] .viewport {
+  background:
+    radial-gradient(680px 340px at 8% -12%, rgba(124,140,255,.42) 0%, transparent 62%),
+    radial-gradient(560px 300px at 96% 6%, rgba(103,227,245,.26) 0%, transparent 60%),
+    radial-gradient(620px 420px at 60% 118%, rgba(210,120,255,.24) 0%, transparent 62%),
+    #080B16;
+}
+[data-swatch="aurora"] .searchbar,
+[data-swatch="aurora"] .sidebar,
+[data-swatch="aurora"] .statusbar { background: rgba(255,255,255,.035); }
+[data-swatch="aurora"] .sidebar { border-right-color: rgba(255,255,255,.07); }
+[data-swatch="aurora"] .search-field { background: rgba(255,255,255,.07); }
+[data-swatch="aurora"] .btn--primary {
+  background: linear-gradient(135deg, #7C8CFF 0%, #57D8EE 100%);
+  box-shadow: 0 4px 16px -4px rgba(103,180,255,.6);
+}
+[data-swatch="aurora"] .search-field:focus-within { box-shadow: 0 0 0 3px rgba(103,227,245,.18); }
+[data-swatch="aurora"][data-mode="light"] {
+  color-scheme: light;
+  --surface: rgba(255,255,255,.66); --surface-2: rgba(255,255,255,.44); --surface-3: rgba(20,26,54,.05);
+  --surface-sunken: rgba(255,255,255,.5); --titlebar: rgba(255,255,255,.6);
+  --border: rgba(22,28,58,.09); --border-strong: rgba(22,28,58,.17); --border-faint: rgba(22,28,58,.05);
+  --text: #171B2C; --text-2: #525A75; --text-3: #8A91A8; --text-inv: #FFFFFF;
+  --accent: #3F63E0; --accent-strong: #2F51CB; --accent-soft: rgba(63,99,224,.10);
+  --accent-soft-2: rgba(63,99,224,.18); --accent-border: rgba(63,99,224,.30);
+  --hover: rgba(22,28,58,.04); --selected: rgba(63,99,224,.10);
+  --danger: #CE3B3B; --danger-soft: rgba(206,59,59,.10);
+  --success: #14855C; --success-soft: rgba(20,133,92,.10);
+  --warning: #9C6B12; --warning-soft: rgba(156,107,18,.12); --warning-border: rgba(156,107,18,.28);
+  --tok-time-fg: #11795A;    --tok-time-bg: rgba(20,133,92,.11);
+  --tok-clip-fg: #2458B8;    --tok-clip-bg: rgba(36,88,184,.11);
+  --tok-rand-fg: #7A3FC0;    --tok-rand-bg: rgba(122,63,192,.11);
+  --tok-sys-fg: #0B6478;     --tok-sys-bg: rgba(11,100,120,.11);
+  --tok-var-fg: #3F63E0;     --tok-var-bg: rgba(63,99,224,.12);
+  --tok-unknown-fg: #BF3535; --tok-unknown-bg: rgba(206,59,59,.11);
+  --tok-invalid-fg: #8E6110; --tok-invalid-bg: rgba(156,107,18,.14);
+  --tok-missing-fg: #8A91A8; --tok-missing-bg: rgba(22,28,58,.05);
+  --shadow-frame: 0 30px 70px -24px rgba(28,34,72,.4), 0 0 0 1px rgba(22,28,58,.07);
+  --shadow-pop: 0 20px 48px -16px rgba(28,34,72,.3), 0 0 0 1px rgba(22,28,58,.07);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.7);
+  --surface-translucent: rgba(255,255,255,.86);
+}
+[data-swatch="aurora"][data-mode="light"] .viewport {
+  background:
+    radial-gradient(680px 340px at 8% -12%, rgba(124,140,255,.34) 0%, transparent 62%),
+    radial-gradient(560px 300px at 96% 6%, rgba(94,214,232,.30) 0%, transparent 60%),
+    radial-gradient(620px 420px at 60% 118%, rgba(236,150,255,.26) 0%, transparent 62%),
+    #F2F4FB;
+}
+[data-swatch="aurora"][data-mode="light"] .searchbar,
+[data-swatch="aurora"][data-mode="light"] .sidebar,
+[data-swatch="aurora"][data-mode="light"] .statusbar { background: rgba(255,255,255,.42); }
+[data-swatch="aurora"][data-mode="light"] .search-field { background: rgba(22,28,58,.05); }
+[data-swatch="aurora"][data-mode="light"] .btn--primary {
+  background: linear-gradient(135deg, #4C63E8 0%, #21B6D4 100%);
+  box-shadow: 0 4px 14px -4px rgba(60,120,230,.5);
+}
+
+/* ==========================================================================
+   #03 · 极地霜蓝 Nord —— 低饱和冷灰蓝，克制、久看不累
+   ========================================================================== */
+[data-swatch="nord"] {
+  color-scheme: light;
+  --surface: #FBFCFD; --surface-2: #F3F6F9; --surface-3: #E8EDF2;
+  --surface-sunken: #F7F9FC; --titlebar: #EFF3F7;
+  --border: rgba(46,64,83,.10); --border-strong: rgba(46,64,83,.18); --border-faint: rgba(46,64,83,.055);
+  --text: #242B33; --text-2: #5A6673; --text-3: #939EAB; --text-inv: #FFFFFF;
+  --accent: #5E81AC; --accent-strong: #4E6D94; --accent-soft: rgba(94,129,172,.11);
+  --accent-soft-2: rgba(94,129,172,.19); --accent-border: rgba(94,129,172,.30);
+  --hover: rgba(46,64,83,.04); --selected: rgba(94,129,172,.10);
+  --danger: #BF616A; --danger-soft: rgba(191,97,106,.12);
+  --success: #4C8C6B; --success-soft: rgba(76,140,107,.12);
+  --warning: #A9812F; --warning-soft: rgba(169,129,47,.13); --warning-border: rgba(169,129,47,.28);
+  --tok-time-fg: #4C8C6B;    --tok-time-bg: rgba(76,140,107,.12);
+  --tok-clip-fg: #5E81AC;    --tok-clip-bg: rgba(94,129,172,.13);
+  --tok-rand-fg: #8A6FA8;    --tok-rand-bg: rgba(138,111,168,.13);
+  --tok-sys-fg: #4E8E9B;     --tok-sys-bg: rgba(78,142,155,.13);
+  --tok-var-fg: #5472A0;     --tok-var-bg: rgba(94,129,172,.14);
+  --tok-unknown-fg: #B0535C; --tok-unknown-bg: rgba(191,97,106,.12);
+  --tok-invalid-fg: #97711F; --tok-invalid-bg: rgba(169,129,47,.15);
+  --tok-missing-fg: #939EAB; --tok-missing-bg: rgba(46,64,83,.05);
+  --shadow-frame: 0 24px 56px -22px rgba(36,43,51,.34), 0 2px 6px rgba(36,43,51,.08);
+  --shadow-pop: 0 14px 36px -12px rgba(36,43,51,.26), 0 0 0 1px rgba(36,43,51,.06);
+  --shadow-inset: inset 0 1px 2px rgba(36,43,51,.045);
+  --surface-translucent: rgba(251,252,253,.92);
+  --r-xs: 3px; --r-sm: 5px; --r-md: 7px; --r-lg: 10px; --r-xl: 13px;
+}
+[data-swatch="nord"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #2E3440; --surface-2: #292E39; --surface-3: #3B4252;
+  --surface-sunken: #2B303B; --titlebar: #343B49;
+  --border: rgba(216,222,233,.09); --border-strong: rgba(216,222,233,.18); --border-faint: rgba(216,222,233,.05);
+  --text: #ECEFF4; --text-2: #B4BCC9; --text-3: #7C8797; --text-inv: #242933;
+  --accent: #88C0D0; --accent-strong: #9CD0DE; --accent-soft: rgba(136,192,208,.16);
+  --accent-soft-2: rgba(136,192,208,.26); --accent-border: rgba(136,192,208,.38);
+  --hover: rgba(216,222,233,.055); --selected: rgba(136,192,208,.15);
+  --danger: #E08A90; --danger-soft: rgba(191,97,106,.20);
+  --success: #A3BE8C; --success-soft: rgba(163,190,140,.18);
+  --warning: #EBCB8B; --warning-soft: rgba(235,203,139,.18); --warning-border: rgba(235,203,139,.34);
+  --tok-time-fg: #A3BE8C;    --tok-time-bg: rgba(163,190,140,.18);
+  --tok-clip-fg: #81A1C1;    --tok-clip-bg: rgba(129,161,193,.18);
+  --tok-rand-fg: #B48EAD;    --tok-rand-bg: rgba(180,142,173,.18);
+  --tok-sys-fg: #8FBCBB;     --tok-sys-bg: rgba(143,188,187,.18);
+  --tok-var-fg: #88C0D0;     --tok-var-bg: rgba(136,192,208,.20);
+  --tok-unknown-fg: #E79AA0; --tok-unknown-bg: rgba(191,97,106,.20);
+  --tok-invalid-fg: #EBCB8B; --tok-invalid-bg: rgba(235,203,139,.18);
+  --tok-missing-fg: #7C8797; --tok-missing-bg: rgba(216,222,233,.06);
+  --shadow-frame: 0 24px 56px -22px rgba(0,0,0,.75), 0 2px 6px rgba(0,0,0,.45);
+  --shadow-pop: 0 14px 36px -12px rgba(0,0,0,.65), 0 0 0 1px rgba(216,222,233,.09);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,.25);
+  --surface-translucent: rgba(46,52,64,.92);
+}
+
+/* ==========================================================================
+   #04 · 夜色东京 Tokyo Night —— 深蓝紫底 + 青/紫高亮，等宽字体更突出
+   ========================================================================== */
+[data-swatch="tokyonight"] {
+  color-scheme: dark;
+  --surface: #1A1B26; --surface-2: #161721; --surface-3: #24283B;
+  --surface-sunken: #1F2335; --titlebar: #22263A;
+  --border: rgba(192,202,245,.10); --border-strong: rgba(192,202,245,.20); --border-faint: rgba(192,202,245,.055);
+  --text: #C0CAF5; --text-2: #9AA5CE; --text-3: #565F89; --text-inv: #1A1B26;
+  --accent: #7AA2F7; --accent-strong: #89B4FA; --accent-soft: rgba(122,162,247,.16);
+  --accent-soft-2: rgba(122,162,247,.26); --accent-border: rgba(122,162,247,.40);
+  --hover: rgba(192,202,245,.06); --selected: rgba(122,162,247,.16);
+  --danger: #F7768E; --danger-soft: rgba(247,118,142,.16);
+  --success: #9ECE6A; --success-soft: rgba(158,206,106,.16);
+  --warning: #E0AF68; --warning-soft: rgba(224,175,104,.16); --warning-border: rgba(224,175,104,.34);
+  --tok-time-fg: #9ECE6A;    --tok-time-bg: rgba(158,206,106,.16);
+  --tok-clip-fg: #7DCFFF;    --tok-clip-bg: rgba(125,207,255,.16);
+  --tok-rand-fg: #BB9AF7;    --tok-rand-bg: rgba(187,154,247,.16);
+  --tok-sys-fg: #73DACA;     --tok-sys-bg: rgba(115,218,202,.16);
+  --tok-var-fg: #7AA2F7;     --tok-var-bg: rgba(122,162,247,.20);
+  --tok-unknown-fg: #F7768E; --tok-unknown-bg: rgba(247,118,142,.16);
+  --tok-invalid-fg: #E0AF68; --tok-invalid-bg: rgba(224,175,104,.16);
+  --tok-missing-fg: #565F89; --tok-missing-bg: rgba(192,202,245,.07);
+  --shadow-frame: 0 26px 60px -22px rgba(9,10,18,.9), 0 0 0 1px rgba(122,162,247,.10);
+  --shadow-pop: 0 16px 40px -14px rgba(9,10,18,.8), 0 0 0 1px rgba(192,202,245,.12);
+  --shadow-inset: inset 0 1px 2px rgba(9,10,18,.4);
+  --surface-translucent: rgba(26,27,38,.92);
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --r-xs: 3px; --r-sm: 5px; --r-md: 6px; --r-lg: 9px; --r-xl: 12px;
+}
+[data-swatch="tokyonight"] .search-field:focus-within { box-shadow: 0 0 0 3px rgba(122,162,247,.22); }
+[data-swatch="tokyonight"][data-mode="light"] {
+  color-scheme: light;
+  --surface: #E9EAF0; --surface-2: #E1E2E7; --surface-3: #D3D5DE;
+  --surface-sunken: #E5E7ED; --titlebar: #DFE1E8;
+  --border: rgba(31,58,99,.12); --border-strong: rgba(31,58,99,.22); --border-faint: rgba(31,58,99,.07);
+  --text: #343B58; --text-2: #5A6478; --text-3: #8990A3; --text-inv: #FFFFFF;
+  --accent: #34548A; --accent-strong: #2A4573; --accent-soft: rgba(52,84,138,.12);
+  --accent-soft-2: rgba(52,84,138,.20); --accent-border: rgba(52,84,138,.32);
+  --hover: rgba(31,58,99,.05); --selected: rgba(52,84,138,.12);
+  --danger: #B4456F; --danger-soft: rgba(180,69,111,.12);
+  --success: #4D7C4D; --success-soft: rgba(77,124,77,.13);
+  --warning: #96691F; --warning-soft: rgba(150,105,31,.14); --warning-border: rgba(150,105,31,.30);
+  --tok-time-fg: #4D7C4D;    --tok-time-bg: rgba(77,124,77,.13);
+  --tok-clip-fg: #2E7DE9;    --tok-clip-bg: rgba(46,125,233,.13);
+  --tok-rand-fg: #7A4FC0;    --tok-rand-bg: rgba(122,79,192,.13);
+  --tok-sys-fg: #1F8A8A;     --tok-sys-bg: rgba(31,138,138,.13);
+  --tok-var-fg: #34548A;     --tok-var-bg: rgba(52,84,138,.14);
+  --tok-unknown-fg: #A63D67; --tok-unknown-bg: rgba(180,69,111,.12);
+  --tok-invalid-fg: #8A5F1A; --tok-invalid-bg: rgba(150,105,31,.15);
+  --tok-missing-fg: #8990A3; --tok-missing-bg: rgba(31,58,99,.06);
+  --shadow-frame: 0 26px 60px -22px rgba(31,42,68,.4), 0 2px 6px rgba(31,42,68,.10);
+  --shadow-pop: 0 16px 40px -14px rgba(31,42,68,.3), 0 0 0 1px rgba(31,42,68,.08);
+  --shadow-inset: inset 0 1px 2px rgba(31,42,68,.06);
+  --surface-translucent: rgba(233,234,240,.92);
+}
+
+/* ==========================================================================
+   #05 · 暖纸陶土 Kraft —— 米白纸感底 + 陶土橘，温暖、有手写笔记气质
+   ========================================================================== */
+[data-swatch="kraft"] {
+  color-scheme: light;
+  --surface: #FDFBF7; --surface-2: #F7F3EB; --surface-3: #EEE7DA;
+  --surface-sunken: #FAF7F0; --titlebar: #F5F1E8;
+  --border: rgba(74,58,40,.11); --border-strong: rgba(74,58,40,.20); --border-faint: rgba(74,58,40,.06);
+  --text: #2B2620; --text-2: #6C6155; --text-3: #A2968A; --text-inv: #FFFDF9;
+  --accent: #BF5F3C; --accent-strong: #A64F30; --accent-soft: rgba(191,95,60,.10);
+  --accent-soft-2: rgba(191,95,60,.18); --accent-border: rgba(191,95,60,.30);
+  --hover: rgba(74,58,40,.045); --selected: rgba(191,95,60,.09);
+  --danger: #B74436; --danger-soft: rgba(183,68,54,.11);
+  --success: #5B7F4A; --success-soft: rgba(91,127,74,.12);
+  --warning: #9A7220; --warning-soft: rgba(154,114,32,.13); --warning-border: rgba(154,114,32,.28);
+  --tok-time-fg: #5B7F4A;    --tok-time-bg: rgba(91,127,74,.13);
+  --tok-clip-fg: #3F6B8A;    --tok-clip-bg: rgba(63,107,138,.12);
+  --tok-rand-fg: #7D5391;    --tok-rand-bg: rgba(125,83,145,.12);
+  --tok-sys-fg: #2E7A78;     --tok-sys-bg: rgba(46,122,120,.12);
+  --tok-var-fg: #BF5F3C;     --tok-var-bg: rgba(191,95,60,.13);
+  --tok-unknown-fg: #B03A2C; --tok-unknown-bg: rgba(183,68,54,.12);
+  --tok-invalid-fg: #8E6716; --tok-invalid-bg: rgba(154,114,32,.15);
+  --tok-missing-fg: #A2968A; --tok-missing-bg: rgba(74,58,40,.055);
+  --shadow-frame: 0 26px 58px -22px rgba(64,48,32,.36), 0 2px 6px rgba(64,48,32,.10);
+  --shadow-pop: 0 14px 36px -12px rgba(64,48,32,.28), 0 0 0 1px rgba(64,48,32,.07);
+  --shadow-inset: inset 0 1px 2px rgba(64,48,32,.05);
+  --surface-translucent: rgba(253,251,247,.93);
+  --r-xs: 4px; --r-sm: 6px; --r-md: 9px; --r-lg: 13px; --r-xl: 17px;
+}
+[data-swatch="kraft"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #201B16; --surface-2: #1A1611; --surface-3: #2A241D;
+  --surface-sunken: #1D1913; --titlebar: #251F19;
+  --border: rgba(240,225,205,.10); --border-strong: rgba(240,225,205,.20); --border-faint: rgba(240,225,205,.055);
+  --text: #F0E7DA; --text-2: #B7A996; --text-3: #807364; --text-inv: #1A1611;
+  --accent: #E08A63; --accent-strong: #EE9C77; --accent-soft: rgba(224,138,99,.16);
+  --accent-soft-2: rgba(224,138,99,.26); --accent-border: rgba(224,138,99,.38);
+  --hover: rgba(240,225,205,.055); --selected: rgba(224,138,99,.15);
+  --danger: #E8836F; --danger-soft: rgba(232,131,111,.16);
+  --success: #A3C08A; --success-soft: rgba(163,192,138,.16);
+  --warning: #DDB35F; --warning-soft: rgba(221,179,95,.16); --warning-border: rgba(221,179,95,.32);
+  --tok-time-fg: #A3C08A;    --tok-time-bg: rgba(163,192,138,.16);
+  --tok-clip-fg: #85B4D4;    --tok-clip-bg: rgba(133,180,212,.16);
+  --tok-rand-fg: #C9A2DA;    --tok-rand-bg: rgba(201,162,218,.16);
+  --tok-sys-fg: #7CC5BF;     --tok-sys-bg: rgba(124,197,191,.16);
+  --tok-var-fg: #E08A63;     --tok-var-bg: rgba(224,138,99,.20);
+  --tok-unknown-fg: #EE907C; --tok-unknown-bg: rgba(232,131,111,.16);
+  --tok-invalid-fg: #DDB35F; --tok-invalid-bg: rgba(221,179,95,.16);
+  --tok-missing-fg: #807364; --tok-missing-bg: rgba(240,225,205,.07);
+  --shadow-frame: 0 26px 58px -22px rgba(0,0,0,.8), 0 2px 6px rgba(0,0,0,.5);
+  --shadow-pop: 0 14px 36px -12px rgba(0,0,0,.7), 0 0 0 1px rgba(240,225,205,.10);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,.3);
+  --surface-translucent: rgba(32,27,22,.93);
+}
+
+/* ==========================================================================
+   #06 · 石墨瑞士 Graphite Swiss —— 去彩色、发丝边框、锐利小圆角、
+        零阴影，强调色就是黑/白本身（Dieter Rams 式克制）
+   ========================================================================== */
+[data-swatch="graphite"] {
+  color-scheme: light;
+  --surface: #FFFFFF; --surface-2: #F5F5F5; --surface-3: #EBEBEB;
+  --surface-sunken: #FAFAFA; --titlebar: #F7F7F7;
+  --border: rgba(0,0,0,.12); --border-strong: rgba(0,0,0,.24); --border-faint: rgba(0,0,0,.06);
+  --text: #0A0A0A; --text-2: #4A4A4A; --text-3: #8C8C8C; --text-inv: #FFFFFF;
+  --accent: #111111; --accent-strong: #000000; --accent-soft: rgba(0,0,0,.055);
+  --accent-soft-2: rgba(0,0,0,.11); --accent-border: rgba(0,0,0,.22);
+  --hover: rgba(0,0,0,.045); --selected: rgba(0,0,0,.06);
+  --danger: #C0392B; --danger-soft: rgba(192,57,43,.09);
+  --success: #2E6B4F; --success-soft: rgba(46,107,79,.09);
+  --warning: #7D6420; --warning-soft: rgba(125,100,32,.10); --warning-border: rgba(125,100,32,.24);
+  --tok-time-fg: #2E6B4F;    --tok-time-bg: rgba(46,107,79,.09);
+  --tok-clip-fg: #1F4E79;    --tok-clip-bg: rgba(31,78,121,.09);
+  --tok-rand-fg: #5B3A78;    --tok-rand-bg: rgba(91,58,120,.09);
+  --tok-sys-fg: #1B5A63;     --tok-sys-bg: rgba(27,90,99,.09);
+  --tok-var-fg: #111111;     --tok-var-bg: rgba(0,0,0,.07);
+  --tok-unknown-fg: #A5372B; --tok-unknown-bg: rgba(192,57,43,.09);
+  --tok-invalid-fg: #6E5718; --tok-invalid-bg: rgba(125,100,32,.12);
+  --tok-missing-fg: #8C8C8C; --tok-missing-bg: rgba(0,0,0,.05);
+  --shadow-frame: 0 20px 44px -20px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.10);
+  --shadow-pop: 0 10px 26px -10px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.12);
+  --shadow-inset: none;
+  --surface-translucent: rgba(255,255,255,.95);
+  --r-xs: 2px; --r-sm: 3px; --r-md: 4px; --r-lg: 5px; --r-xl: 6px;
+}
+[data-swatch="graphite"] .li-name { letter-spacing: 0; font-weight: 600; }
+[data-swatch="graphite"] .list-item[aria-selected="true"]::before { width: 3px; }
+[data-swatch="graphite"] .side-sec,
+[data-swatch="graphite"] .render-label,
+[data-swatch="graphite"] .panel-name { letter-spacing: .12em; }
+[data-swatch="graphite"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #121212; --surface-2: #0D0D0D; --surface-3: #1E1E1E;
+  --surface-sunken: #101010; --titlebar: #161616;
+  --border: rgba(255,255,255,.14); --border-strong: rgba(255,255,255,.30); --border-faint: rgba(255,255,255,.07);
+  --text: #F7F7F7; --text-2: #B0B0B0; --text-3: #737373; --text-inv: #0A0A0A;
+  --accent: #F7F7F7; --accent-strong: #FFFFFF; --accent-soft: rgba(255,255,255,.09);
+  --accent-soft-2: rgba(255,255,255,.16); --accent-border: rgba(255,255,255,.28);
+  --hover: rgba(255,255,255,.07); --selected: rgba(255,255,255,.10);
+  --danger: #F0736A; --danger-soft: rgba(240,115,106,.14);
+  --success: #86C9A5; --success-soft: rgba(134,201,165,.14);
+  --warning: #D9BE72; --warning-soft: rgba(217,190,114,.14); --warning-border: rgba(217,190,114,.30);
+  --tok-time-fg: #86C9A5;    --tok-time-bg: rgba(134,201,165,.14);
+  --tok-clip-fg: #8FB8E8;    --tok-clip-bg: rgba(143,184,232,.14);
+  --tok-rand-fg: #C3A2E0;    --tok-rand-bg: rgba(195,162,224,.14);
+  --tok-sys-fg: #82C6D0;     --tok-sys-bg: rgba(130,198,208,.14);
+  --tok-var-fg: #F7F7F7;     --tok-var-bg: rgba(255,255,255,.12);
+  --tok-unknown-fg: #F08880; --tok-unknown-bg: rgba(240,115,106,.14);
+  --tok-invalid-fg: #D9BE72; --tok-invalid-bg: rgba(217,190,114,.14);
+  --tok-missing-fg: #737373; --tok-missing-bg: rgba(255,255,255,.07);
+  --shadow-frame: 0 20px 44px -20px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.10);
+  --shadow-pop: 0 10px 26px -10px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.14);
+  --surface-translucent: rgba(18,18,18,.95);
+}
+
+/* ==========================================================================
+   #07 · 石板祖母绿 Emerald Slate —— Linear/Vercel 式冷石板 + 单一翡翠强调，
+        高对比、锐利、工程感
+   ========================================================================== */
+[data-swatch="emerald"] {
+  color-scheme: dark;
+  --surface: #111614; --surface-2: #0D1110; --surface-3: #1C2320;
+  --surface-sunken: #0F1412; --titlebar: #151B18;
+  --border: rgba(220,240,230,.09); --border-strong: rgba(220,240,230,.18); --border-faint: rgba(220,240,230,.05);
+  --text: #E7F0EB; --text-2: #96A8A0; --text-3: #5F7069; --text-inv: #08110D;
+  --accent: #3DD68C; --accent-strong: #55E29C; --accent-soft: rgba(61,214,140,.14);
+  --accent-soft-2: rgba(61,214,140,.24); --accent-border: rgba(61,214,140,.36);
+  --hover: rgba(220,240,230,.055); --selected: rgba(61,214,140,.13);
+  --danger: #F4776F; --danger-soft: rgba(244,119,111,.14);
+  --success: #3DD68C; --success-soft: rgba(61,214,140,.14);
+  --warning: #E3B341; --warning-soft: rgba(227,179,65,.14); --warning-border: rgba(227,179,65,.32);
+  --tok-time-fg: #3DD68C;    --tok-time-bg: rgba(61,214,140,.14);
+  --tok-clip-fg: #58A6FF;    --tok-clip-bg: rgba(88,166,255,.15);
+  --tok-rand-fg: #C792EA;    --tok-rand-bg: rgba(199,146,234,.15);
+  --tok-sys-fg: #39C5CF;     --tok-sys-bg: rgba(57,197,207,.15);
+  --tok-var-fg: #7EE2B8;     --tok-var-bg: rgba(61,214,140,.18);
+  --tok-unknown-fg: #F6837C; --tok-unknown-bg: rgba(244,119,111,.14);
+  --tok-invalid-fg: #E3B341; --tok-invalid-bg: rgba(227,179,65,.14);
+  --tok-missing-fg: #5F7069; --tok-missing-bg: rgba(220,240,230,.06);
+  --shadow-frame: 0 26px 60px -22px rgba(0,0,0,.85), 0 0 0 1px rgba(61,214,140,.09);
+  --shadow-pop: 0 16px 40px -14px rgba(0,0,0,.75), 0 0 0 1px rgba(220,240,230,.11);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,.35);
+  --surface-translucent: rgba(17,22,20,.93);
+  --r-xs: 3px; --r-sm: 5px; --r-md: 6px; --r-lg: 9px; --r-xl: 12px;
+}
+[data-swatch="emerald"][data-mode="light"] {
+  color-scheme: light;
+  --surface: #FFFFFF; --surface-2: #F6F8F7; --surface-3: #EBEFED;
+  --surface-sunken: #F9FAF9; --titlebar: #F2F5F3;
+  --border: rgba(16,32,26,.10); --border-strong: rgba(16,32,26,.20); --border-faint: rgba(16,32,26,.05);
+  --text: #101917; --text-2: #4C5C55; --text-3: #8A9991; --text-inv: #FFFFFF;
+  --accent: #0E9F6E; --accent-strong: #0B8259; --accent-soft: rgba(14,159,110,.10);
+  --accent-soft-2: rgba(14,159,110,.18); --accent-border: rgba(14,159,110,.30);
+  --hover: rgba(16,32,26,.04); --selected: rgba(14,159,110,.09);
+  --danger: #CE3B3B; --danger-soft: rgba(206,59,59,.10);
+  --success: #0E9F6E; --success-soft: rgba(14,159,110,.10);
+  --warning: #A2761A; --warning-soft: rgba(162,118,26,.12); --warning-border: rgba(162,118,26,.28);
+  --tok-time-fg: #0B8259;    --tok-time-bg: rgba(14,159,110,.10);
+  --tok-clip-fg: #2458B8;    --tok-clip-bg: rgba(36,88,184,.10);
+  --tok-rand-fg: #7E3DBE;    --tok-rand-bg: rgba(126,61,190,.10);
+  --tok-sys-fg: #0C6E77;     --tok-sys-bg: rgba(12,110,119,.10);
+  --tok-var-fg: #0E9F6E;     --tok-var-bg: rgba(14,159,110,.12);
+  --tok-unknown-fg: #C0332F; --tok-unknown-bg: rgba(206,59,59,.10);
+  --tok-invalid-fg: #916813; --tok-invalid-bg: rgba(162,118,26,.14);
+  --tok-missing-fg: #8A9991; --tok-missing-bg: rgba(16,32,26,.05);
+  --shadow-frame: 0 26px 60px -22px rgba(12,28,22,.32), 0 2px 6px rgba(12,28,22,.08);
+  --shadow-pop: 0 16px 40px -14px rgba(12,28,22,.24), 0 0 0 1px rgba(12,28,22,.06);
+  --shadow-inset: inset 0 1px 2px rgba(12,28,22,.05);
+  --surface-translucent: rgba(255,255,255,.93);
+}
+
+/* ==========================================================================
+   #08 · 荧光墨 Cyber Ink —— 近黑底 + 琥珀荧光，全界面等宽字体、硬直角、
+        发丝边框，终端美学
+   ========================================================================== */
+[data-swatch="cyberink"] {
+  color-scheme: dark;
+  --font-ui: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --surface: #0A0B0C; --surface-2: #070809; --surface-3: #15171A;
+  --surface-sunken: #0C0E10; --titlebar: #101215;
+  --border: rgba(255,176,32,.14); --border-strong: rgba(255,176,32,.30); --border-faint: rgba(255,255,255,.06);
+  --text: #E9E6E1; --text-2: #A6A29B; --text-3: #6B6862; --text-inv: #0A0B0C;
+  --accent: #FFB000; --accent-strong: #FFC233; --accent-soft: rgba(255,176,0,.13);
+  --accent-soft-2: rgba(255,176,0,.22); --accent-border: rgba(255,176,0,.38);
+  --hover: rgba(255,176,0,.07); --selected: rgba(255,176,0,.12);
+  --danger: #FF6B5A; --danger-soft: rgba(255,107,90,.14);
+  --success: #4AF6A0; --success-soft: rgba(74,246,160,.13);
+  --warning: #FFB000; --warning-soft: rgba(255,176,0,.14); --warning-border: rgba(255,176,0,.34);
+  --tok-time-fg: #4AF6A0;    --tok-time-bg: rgba(74,246,160,.12);
+  --tok-clip-fg: #58C7FF;    --tok-clip-bg: rgba(88,199,255,.12);
+  --tok-rand-fg: #FF8AC2;    --tok-rand-bg: rgba(255,138,194,.12);
+  --tok-sys-fg: #56E0D0;     --tok-sys-bg: rgba(86,224,208,.12);
+  --tok-var-fg: #FFB000;     --tok-var-bg: rgba(255,176,0,.15);
+  --tok-unknown-fg: #FF6B5A; --tok-unknown-bg: rgba(255,107,90,.13);
+  --tok-invalid-fg: #FFD166; --tok-invalid-bg: rgba(255,209,102,.13);
+  --tok-missing-fg: #6B6862; --tok-missing-bg: rgba(255,255,255,.06);
+  --shadow-frame: 0 0 0 1px rgba(255,176,0,.22), 0 24px 60px -20px rgba(0,0,0,.95);
+  --shadow-pop: 0 0 0 1px rgba(255,176,0,.26), 0 14px 34px -12px rgba(0,0,0,.85);
+  --shadow-inset: inset 0 0 0 1px rgba(255,176,0,.07);
+  --surface-translucent: rgba(10,11,12,.94);
+  --r-xs: 2px; --r-sm: 2px; --r-md: 3px; --r-lg: 3px; --r-xl: 4px;
+}
+[data-swatch="cyberink"] .btn--primary { box-shadow: 0 0 18px -4px rgba(255,176,0,.55); }
+[data-swatch="cyberink"] .li-name { letter-spacing: .01em; text-transform: none; }
+[data-swatch="cyberink"] .search-field:focus-within { box-shadow: 0 0 0 2px rgba(255,176,0,.3); }
+[data-swatch="cyberink"][data-mode="light"] {
+  color-scheme: light;
+  --surface: #FAFAF7; --surface-2: #F2F2ED; --surface-3: #E7E7DF;
+  --surface-sunken: #F6F6F1; --titlebar: #EFEFE9;
+  --border: rgba(20,20,18,.18); --border-strong: rgba(20,20,18,.40); --border-faint: rgba(20,20,18,.09);
+  --text: #111110; --text-2: #4E4E48; --text-3: #87877E; --text-inv: #FAFAF7;
+  --accent: #A85A00; --accent-strong: #8C4A00; --accent-soft: rgba(168,90,0,.10);
+  --accent-soft-2: rgba(168,90,0,.18); --accent-border: rgba(168,90,0,.34);
+  --hover: rgba(20,20,18,.05); --selected: rgba(168,90,0,.10);
+  --danger: #B32B1C; --danger-soft: rgba(179,43,28,.10);
+  --success: #14714A; --success-soft: rgba(20,113,74,.10);
+  --warning: #8A5A00; --warning-soft: rgba(138,90,0,.11); --warning-border: rgba(138,90,0,.28);
+  --tok-time-fg: #14714A;    --tok-time-bg: rgba(20,113,74,.10);
+  --tok-clip-fg: #1B5E8C;    --tok-clip-bg: rgba(27,94,140,.10);
+  --tok-rand-fg: #7A2E63;    --tok-rand-bg: rgba(122,46,99,.10);
+  --tok-sys-fg: #14666B;     --tok-sys-bg: rgba(20,102,107,.10);
+  --tok-var-fg: #A85A00;     --tok-var-bg: rgba(168,90,0,.12);
+  --tok-unknown-fg: #A8281A; --tok-unknown-bg: rgba(179,43,28,.10);
+  --tok-invalid-fg: #7C5200; --tok-invalid-bg: rgba(138,90,0,.13);
+  --tok-missing-fg: #87877E; --tok-missing-bg: rgba(20,20,18,.06);
+  --shadow-frame: 0 0 0 1px rgba(20,20,18,.28), 0 20px 44px -20px rgba(20,20,18,.4);
+  --shadow-pop: 0 0 0 1px rgba(20,20,18,.24), 0 12px 28px -12px rgba(20,20,18,.3);
+  --shadow-inset: inset 0 0 0 1px rgba(20,20,18,.06);
+  --surface-translucent: rgba(250,250,247,.95);
+}
+
+/* ==========================================================================
+   #09 · 玫瑰石英 Rosé Quartz —— 极浅粉灰 + 玫瑰金强调，大圆角、
+        漫射柔影，柔和不甜腻
+   ========================================================================== */
+[data-swatch="rose"] {
+  color-scheme: light;
+  --surface: #FFFCFD; --surface-2: #FBF5F7; --surface-3: #F3E9EC;
+  --surface-sunken: #FDF8F9; --titlebar: #F9F2F4;
+  --border: rgba(78,44,56,.09); --border-strong: rgba(78,44,56,.17); --border-faint: rgba(78,44,56,.045);
+  --text: #2C2126; --text-2: #6E5A62; --text-3: #A8939C; --text-inv: #FFF9FB;
+  --accent: #C2657E; --accent-strong: #AC5269; --accent-soft: rgba(194,101,126,.10);
+  --accent-soft-2: rgba(194,101,126,.17); --accent-border: rgba(194,101,126,.28);
+  --hover: rgba(78,44,56,.035); --selected: rgba(194,101,126,.08);
+  --danger: #C44A5A; --danger-soft: rgba(196,74,90,.10);
+  --success: #4E8A6A; --success-soft: rgba(78,138,106,.11);
+  --warning: #A87C2A; --warning-soft: rgba(168,124,42,.12); --warning-border: rgba(168,124,42,.26);
+  --tok-time-fg: #4E8A6A;    --tok-time-bg: rgba(78,138,106,.11);
+  --tok-clip-fg: #5876A8;    --tok-clip-bg: rgba(88,118,168,.11);
+  --tok-rand-fg: #8E63AE;    --tok-rand-bg: rgba(142,99,174,.11);
+  --tok-sys-fg: #4A8492;     --tok-sys-bg: rgba(74,132,146,.11);
+  --tok-var-fg: #C2657E;     --tok-var-bg: rgba(194,101,126,.12);
+  --tok-unknown-fg: #B94051; --tok-unknown-bg: rgba(196,74,90,.11);
+  --tok-invalid-fg: #966C1E; --tok-invalid-bg: rgba(168,124,42,.14);
+  --tok-missing-fg: #A8939C; --tok-missing-bg: rgba(78,44,56,.05);
+  --shadow-frame: 0 30px 66px -26px rgba(74,40,54,.34), 0 2px 6px rgba(74,40,54,.07);
+  --shadow-pop: 0 18px 44px -16px rgba(74,40,54,.26), 0 0 0 1px rgba(74,40,54,.06);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 2px rgba(74,40,54,.035);
+  --surface-translucent: rgba(255,252,253,.93);
+  --r-xs: 4px; --r-sm: 7px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px;
+}
+[data-swatch="rose"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #1D1619; --surface-2: #181215; --surface-3: #261D22;
+  --surface-sunken: #1A1417; --titlebar: #221A1E;
+  --border: rgba(245,225,232,.09); --border-strong: rgba(245,225,232,.18); --border-faint: rgba(245,225,232,.05);
+  --text: #F2E8EC; --text-2: #B49FA7; --text-3: #7D6A72; --text-inv: #181215;
+  --accent: #E58FA6; --accent-strong: #F0A3B6; --accent-soft: rgba(229,143,166,.15);
+  --accent-soft-2: rgba(229,143,166,.25); --accent-border: rgba(229,143,166,.38);
+  --hover: rgba(245,225,232,.05); --selected: rgba(229,143,166,.14);
+  --danger: #F0788A; --danger-soft: rgba(240,120,138,.15);
+  --success: #7FC7A2; --success-soft: rgba(127,199,162,.15);
+  --warning: #E0B878; --warning-soft: rgba(224,184,120,.15); --warning-border: rgba(224,184,120,.32);
+  --tok-time-fg: #7FC7A2;    --tok-time-bg: rgba(127,199,162,.15);
+  --tok-clip-fg: #93AEDD;    --tok-clip-bg: rgba(147,174,221,.15);
+  --tok-rand-fg: #CBA4E4;    --tok-rand-bg: rgba(203,164,228,.15);
+  --tok-sys-fg: #82BCC9;     --tok-sys-bg: rgba(130,188,201,.15);
+  --tok-var-fg: #E58FA6;     --tok-var-bg: rgba(229,143,166,.19);
+  --tok-unknown-fg: #F4889A; --tok-unknown-bg: rgba(240,120,138,.15);
+  --tok-invalid-fg: #E0B878; --tok-invalid-bg: rgba(224,184,120,.15);
+  --tok-missing-fg: #7D6A72; --tok-missing-bg: rgba(245,225,232,.06);
+  --shadow-frame: 0 30px 66px -26px rgba(0,0,0,.85), 0 2px 6px rgba(0,0,0,.5);
+  --shadow-pop: 0 18px 44px -16px rgba(0,0,0,.7), 0 0 0 1px rgba(245,225,232,.09);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -1px 2px rgba(0,0,0,.25);
+  --surface-translucent: rgba(29,22,25,.93);
+}
+
+/* ==========================================================================
+   #10 · 暮紫渐变 Dusk Violet —— 紫灰夜色 + 紫→粉渐变强调，柔和发光焦点
+   ========================================================================== */
+[data-swatch="dusk"] {
+  color-scheme: dark;
+  --surface: #181322; --surface-2: #13101C; --surface-3: #221B2F;
+  --surface-sunken: #15111F; --titlebar: #1D1729;
+  --border: rgba(226,214,255,.09); --border-strong: rgba(226,214,255,.19); --border-faint: rgba(226,214,255,.05);
+  --text: #EDE8F7; --text-2: #A99FC2; --text-3: #726A8C; --text-inv: #14101D;
+  --accent: #A78BFA; --accent-strong: #B9A0FB; --accent-soft: rgba(167,139,250,.16);
+  --accent-soft-2: rgba(167,139,250,.26); --accent-border: rgba(167,139,250,.40);
+  --hover: rgba(226,214,255,.055); --selected: rgba(167,139,250,.16);
+  --danger: #FB7A9C; --danger-soft: rgba(251,122,156,.15);
+  --success: #6EE7B7; --success-soft: rgba(110,231,183,.15);
+  --warning: #FCD34D; --warning-soft: rgba(252,211,77,.15); --warning-border: rgba(252,211,77,.32);
+  --tok-time-fg: #6EE7B7;    --tok-time-bg: rgba(110,231,183,.15);
+  --tok-clip-fg: #8AB6FF;    --tok-clip-bg: rgba(138,182,255,.15);
+  --tok-rand-fg: #E0A3FF;    --tok-rand-bg: rgba(224,163,255,.16);
+  --tok-sys-fg: #7DD8E8;     --tok-sys-bg: rgba(125,216,232,.15);
+  --tok-var-fg: #C4B5FD;     --tok-var-bg: rgba(167,139,250,.20);
+  --tok-unknown-fg: #FB8AA6; --tok-unknown-bg: rgba(251,122,156,.15);
+  --tok-invalid-fg: #FCD34D; --tok-invalid-bg: rgba(252,211,77,.15);
+  --tok-missing-fg: #726A8C; --tok-missing-bg: rgba(226,214,255,.06);
+  --shadow-frame: 0 28px 64px -24px rgba(8,5,18,.9), 0 0 0 1px rgba(167,139,250,.12);
+  --shadow-pop: 0 18px 44px -16px rgba(8,5,18,.8), 0 0 0 1px rgba(226,214,255,.12);
+  --shadow-inset: inset 0 1px 2px rgba(8,5,18,.4);
+  --surface-translucent: rgba(24,19,34,.93);
+  --r-xs: 4px; --r-sm: 7px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px;
+}
+[data-swatch="dusk"] .btn--primary {
+  background: linear-gradient(120deg, #A78BFA 0%, #E879A8 100%);
+  box-shadow: 0 5px 18px -6px rgba(190,120,250,.6);
+}
+[data-swatch="dusk"] .list-item[aria-selected="true"]::before {
+  background: linear-gradient(180deg, #A78BFA 0%, #E879A8 100%);
+}
+[data-swatch="dusk"] .search-field:focus-within { box-shadow: 0 0 0 3px rgba(167,139,250,.20); }
+[data-swatch="dusk"][data-mode="light"] {
+  color-scheme: light;
+  --surface: #FDFCFF; --surface-2: #F7F4FC; --surface-3: #EEE8F8;
+  --surface-sunken: #FAF8FD; --titlebar: #F5F1FB;
+  --border: rgba(52,36,84,.09); --border-strong: rgba(52,36,84,.18); --border-faint: rgba(52,36,84,.045);
+  --text: #241D33; --text-2: #5F5573; --text-3: #9A90AC; --text-inv: #FFFFFF;
+  --accent: #7C5CD6; --accent-strong: #6A49C4; --accent-soft: rgba(124,92,214,.10);
+  --accent-soft-2: rgba(124,92,214,.18); --accent-border: rgba(124,92,214,.30);
+  --hover: rgba(52,36,84,.04); --selected: rgba(124,92,214,.09);
+  --danger: #C9456A; --danger-soft: rgba(201,69,106,.10);
+  --success: #17876A; --success-soft: rgba(23,135,106,.10);
+  --warning: #A0741C; --warning-soft: rgba(160,116,28,.12); --warning-border: rgba(160,116,28,.28);
+  --tok-time-fg: #17876A;    --tok-time-bg: rgba(23,135,106,.10);
+  --tok-clip-fg: #3B62C4;    --tok-clip-bg: rgba(59,98,196,.10);
+  --tok-rand-fg: #9450C9;    --tok-rand-bg: rgba(148,80,201,.11);
+  --tok-sys-fg: #14738A;     --tok-sys-bg: rgba(20,115,138,.10);
+  --tok-var-fg: #7C5CD6;     --tok-var-bg: rgba(124,92,214,.12);
+  --tok-unknown-fg: #BE3A60; --tok-unknown-bg: rgba(201,69,106,.10);
+  --tok-invalid-fg: #8F6512; --tok-invalid-bg: rgba(160,116,28,.14);
+  --tok-missing-fg: #9A90AC; --tok-missing-bg: rgba(52,36,84,.05);
+  --shadow-frame: 0 28px 64px -26px rgba(46,32,78,.36), 0 2px 6px rgba(46,32,78,.08);
+  --shadow-pop: 0 18px 44px -16px rgba(46,32,78,.26), 0 0 0 1px rgba(46,32,78,.06);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 2px rgba(46,32,78,.04);
+  --surface-translucent: rgba(253,252,255,.93);
+}
+[data-swatch="dusk"][data-mode="light"] .btn--primary {
+  background: linear-gradient(120deg, #7C5CD6 0%, #D2578F 100%);
+  box-shadow: 0 5px 16px -6px rgba(140,90,220,.5);
+}
+
+/* ==========================================================================
+   #11 · 材料设计 Material You —— Material 3 官方基准色板：tonal 分层表面、
+        secondary-container 胶囊导航 / 色调按钮、全圆胶囊主按钮、
+        4/8/12/16/28 形状尺度、M3 elevation 阴影。浅深均为基准值
+   ========================================================================== */
+[data-swatch="material"] {
+  color-scheme: light;
+  --font-ui: "Roboto", "Roboto Flex", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+             "PingFang SC", "Helvetica Neue", system-ui, sans-serif;
+  --surface: #FEF7FF; --surface-2: #F3EDF7; --surface-3: #E6E0E9;
+  --surface-sunken: #F7F2FA; --titlebar: #F3EDF7;
+  --border: #CAC4D0; --border-strong: #79747E; --border-faint: #E6E0E9;
+  --text: #1D1B20; --text-2: #49454F; --text-3: #79747E; --text-inv: #FFFFFF;
+  --accent: #6750A4; --accent-strong: #563E8F; --accent-soft: rgba(103,80,164,.08);
+  --accent-soft-2: rgba(103,80,164,.12); --accent-border: rgba(103,80,164,.32);
+  --hover: rgba(29,27,32,.08); --selected: #E8DEF8;
+  --danger: #B3261E; --danger-soft: rgba(179,38,30,.10);
+  --success: #146C2E; --success-soft: rgba(20,108,46,.10);
+  --warning: #7C5800; --warning-soft: rgba(124,88,0,.12); --warning-border: rgba(124,88,0,.30);
+  --tok-time-fg: #146C2E;    --tok-time-bg: rgba(20,108,46,.10);
+  --tok-clip-fg: #0B57D0;    --tok-clip-bg: rgba(11,87,208,.10);
+  --tok-rand-fg: #984061;    --tok-rand-bg: rgba(152,64,97,.10);
+  --tok-sys-fg: #006A60;     --tok-sys-bg: rgba(0,106,96,.10);
+  --tok-var-fg: #6750A4;     --tok-var-bg: rgba(103,80,164,.12);
+  --tok-unknown-fg: #B3261E; --tok-unknown-bg: rgba(179,38,30,.10);
+  --tok-invalid-fg: #8B5000; --tok-invalid-bg: rgba(139,80,0,.12);
+  --tok-missing-fg: #79747E; --tok-missing-bg: rgba(73,69,79,.06);
+  --shadow-frame: 0 1px 3px rgba(0,0,0,.30), 0 4px 8px 3px rgba(0,0,0,.15);
+  --shadow-pop: 0 1px 2px rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15);
+  --shadow-inset: none;
+  --surface-translucent: rgba(254,247,255,.92);
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 28px;
+}
+/* Material 签名：全圆胶囊按钮 / 导航胶囊 / 胶囊搜索框 */
+[data-swatch="material"] .btn { border-radius: 999px; }
+[data-swatch="material"] .btn--primary { box-shadow: none; }
+/* 次按钮走 tonal（secondary-container），不是描边按钮 */
+[data-swatch="material"] .btn:not(.btn--primary):not(.btn--ghost):not(.btn--danger) {
+  background: var(--selected); border-color: transparent; color: var(--text);
+}
+[data-swatch="material"] .search-field { border-radius: 999px; }
+/* M3 文本框焦点 = 2px 主色指示，不用外发光 */
+[data-swatch="material"] .search-field:focus-within {
+  border-color: var(--accent); box-shadow: none;
+}
+[data-swatch="material"] .side-item { border-radius: 999px; }
+[data-swatch="material"] .side-item[aria-current="true"] { color: var(--text); }
+[data-swatch="material"] .side-item[aria-current="true"] .ct { color: var(--text-2); }
+/* M3 列表无左侧色条，选中靠整行 secondary-container */
+[data-swatch="material"] .list-item[aria-selected="true"]::before { display: none; }
+[data-swatch="material"] .panel { border-radius: var(--r-lg); }
+[data-swatch="material"][data-mode="dark"] {
+  color-scheme: dark;
+  --surface: #141218; --surface-2: #211F26; --surface-3: #36343B;
+  --surface-sunken: #1D1B20; --titlebar: #211F26;
+  --border: #49454F; --border-strong: #938F99; --border-faint: #2B2930;
+  --text: #E6E0E9; --text-2: #CAC4D0; --text-3: #938F99; --text-inv: #381E72;
+  --accent: #D0BCFF; --accent-strong: #DBC9FF; --accent-soft: rgba(208,188,255,.10);
+  --accent-soft-2: rgba(208,188,255,.16); --accent-border: rgba(208,188,255,.36);
+  --hover: rgba(230,224,233,.08); --selected: #4A4458;
+  --danger: #F2B8B5; --danger-soft: rgba(242,184,181,.14);
+  --success: #7BD88F; --success-soft: rgba(123,216,143,.14);
+  --warning: #F3C33F; --warning-soft: rgba(243,195,63,.14); --warning-border: rgba(243,195,63,.34);
+  --tok-time-fg: #7BD88F;    --tok-time-bg: rgba(123,216,143,.16);
+  --tok-clip-fg: #A8C7FA;    --tok-clip-bg: rgba(168,199,250,.16);
+  --tok-rand-fg: #FFB1C8;    --tok-rand-bg: rgba(255,177,200,.16);
+  --tok-sys-fg: #7AD4D0;     --tok-sys-bg: rgba(122,212,208,.16);
+  --tok-var-fg: #D0BCFF;     --tok-var-bg: rgba(208,188,255,.20);
+  --tok-unknown-fg: #F2B8B5; --tok-unknown-bg: rgba(242,184,181,.16);
+  --tok-invalid-fg: #F3C33F; --tok-invalid-bg: rgba(243,195,63,.16);
+  --tok-missing-fg: #938F99; --tok-missing-bg: rgba(230,224,233,.06);
+  --shadow-frame: 0 1px 3px rgba(0,0,0,.50), 0 4px 8px 3px rgba(0,0,0,.35);
+  --shadow-pop: 0 1px 2px rgba(0,0,0,.50), 0 2px 6px 2px rgba(0,0,0,.35);
+  --shadow-inset: none;
+  --surface-translucent: rgba(20,18,24,.92);
+}

@@ -1,0 +1,23 @@
+{
+  "pluginName": "Snippet Box",
+  "description": "快速粘贴常用文本片段，支持剪贴板、时间、随机值、系统上下文等占位符实时渲染",
+  "author": "numbero",
+  "homepage": "",
+  "main": "index.html",
+  "logo": "logo.png",
+  "preload": "preload.js",
+  "version": "1.0.0",
+  "platform": ["darwin"],
+  "features": [
+    {
+      "code": "main",
+      "explain": "快捷粘贴带占位符的文本片段",
+      "icon": "icon.svg",
+      "cmds": ["snippet", "snip", "片段"]
+    }
+  ],
+  "pluginSetting": {
+    "single": true,
+    "height": 544
+  }
+}
