@@ -32,6 +32,7 @@
   /* ---------- 主题 / 窗口 ---------- */
   function applyTheme() {
     document.documentElement.setAttribute('data-theme', state.settings.theme);
+    document.documentElement.setAttribute('data-style', state.settings.style);
   }
   function setHeight(px) {
     try { if (U() && U().setExpendHeight) U().setExpendHeight(px); } catch (e) { /* 预览环境无窗口 API */ }

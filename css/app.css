@@ -409,3 +409,8 @@ body.narrow .hint--edit, body.narrow .hint--esc { display: none; }
 .render-out::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px;
   border: 2px solid transparent; background-clip: content-box; }
 .list::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 第二套皮肤 · 荧光墨 Cyber Ink 的结构差异 ---------- */
+:root[data-style="cyberink"] .btn--primary { box-shadow: var(--btn-glow); }
+:root[data-style="cyberink"] .search-field:focus-within { box-shadow: var(--focus-ring); }
+:root[data-style="cyberink"] .li-name { letter-spacing: .01em; }

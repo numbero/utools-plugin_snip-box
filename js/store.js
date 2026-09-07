@@ -10,6 +10,7 @@ window.SBStore = (function () {
     invertModifier: true,       // ⌥ 临时反向
     directPrefix: '',           // 直达关键字统一前缀
     theme: 'auto',              // auto | light | dark
+    style: 'native',            // native=靛蓝原生 | cyberink=荧光墨
     showPreviewInList: true,
     colorTokens: true,
     delimiter: 'mustache'       // mustache | dollar | bracket

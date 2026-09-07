@@ -201,3 +201,170 @@
     --warning-border: rgba(227, 172, 74, .32);
   }
 }
+
+/* ==========================================================================
+   第二套皮肤 · 荧光墨 Cyber Ink（设置「界面风格」切换）
+   近黑底 + 琥珀荧光、全界面等宽、硬直角、发丝边框，终端美学；
+   浅色为暖纸琥珀变体。与 data-theme（light/dark/auto）正交。
+   选择器特异性不低于上方原生主题块，故整段放在文件末尾
+   ========================================================================== */
+:root[data-style="cyberink"] {
+  --font-ui: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r-xs: 2px; --r-sm: 2px; --r-md: 3px; --r-lg: 3px; --r-xl: 4px;
+}
+
+:root[data-style="cyberink"],
+:root[data-style="cyberink"][data-theme="light"] {
+  color-scheme: light;
+
+  --surface: #FAFAF7;
+  --surface-2: #F2F2ED;
+  --surface-3: #E7E7DF;
+  --surface-sunken: #F6F6F1;
+  --titlebar: #EFEFE9;
+
+  --border: rgba(20, 20, 18, .18);
+  --border-strong: rgba(20, 20, 18, .40);
+  --border-faint: rgba(20, 20, 18, .09);
+
+  --text: #111110;
+  --text-2: #4E4E48;
+  --text-3: #87877E;
+  --text-inv: #FAFAF7;
+
+  --accent: #A85A00;
+  --accent-strong: #8C4A00;
+  --accent-soft: rgba(168, 90, 0, .10);
+  --accent-soft-2: rgba(168, 90, 0, .18);
+  --accent-border: rgba(168, 90, 0, .34);
+
+  --hover: rgba(20, 20, 18, .05);
+  --selected: rgba(168, 90, 0, .10);
+
+  --danger: #B32B1C;   --danger-soft: rgba(179, 43, 28, .10);
+  --success: #14714A;  --success-soft: rgba(20, 113, 74, .10);
+  --warning: #8A5A00;  --warning-soft: rgba(138, 90, 0, .11);
+
+  --tok-time-fg: #14714A;        --tok-time-bg: rgba(20, 113, 74, .10);
+  --tok-clip-fg: #1B5E8C;        --tok-clip-bg: rgba(27, 94, 140, .10);
+  --tok-rand-fg: #7A2E63;        --tok-rand-bg: rgba(122, 46, 99, .10);
+  --tok-sys-fg: #14666B;         --tok-sys-bg: rgba(20, 102, 107, .10);
+  --tok-var-fg: #A85A00;         --tok-var-bg: rgba(168, 90, 0, .12);
+  --tok-unknown-fg: #A8281A;     --tok-unknown-bg: rgba(179, 43, 28, .10);
+  --tok-invalid-fg: #7C5200;     --tok-invalid-bg: rgba(138, 90, 0, .13);
+  --tok-missing-fg: #87877E;     --tok-missing-bg: rgba(20, 20, 18, .06);
+
+  --shadow-frame: 0 0 0 1px rgba(20, 20, 18, .28), 0 20px 44px -20px rgba(20, 20, 18, .4);
+  --shadow-pop: 0 0 0 1px rgba(20, 20, 18, .24), 0 12px 28px -12px rgba(20, 20, 18, .3);
+  --shadow-inset: inset 0 0 0 1px rgba(20, 20, 18, .06);
+
+  --surface-translucent: rgba(250, 250, 247, .95);
+  --warning-border: rgba(138, 90, 0, .28);
+
+  --btn-glow: 0 0 14px -6px rgba(168, 90, 0, .45);
+  --focus-ring: 0 0 0 2px rgba(168, 90, 0, .30);
+}
+
+:root[data-style="cyberink"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface: #0A0B0C;
+  --surface-2: #070809;
+  --surface-3: #15171A;
+  --surface-sunken: #0C0E10;
+  --titlebar: #101215;
+
+  --border: rgba(255, 176, 32, .14);
+  --border-strong: rgba(255, 176, 32, .30);
+  --border-faint: rgba(255, 255, 255, .06);
+
+  --text: #E9E6E1;
+  --text-2: #A6A29B;
+  --text-3: #6B6862;
+  --text-inv: #0A0B0C;
+
+  --accent: #FFB000;
+  --accent-strong: #FFC233;
+  --accent-soft: rgba(255, 176, 0, .13);
+  --accent-soft-2: rgba(255, 176, 0, .22);
+  --accent-border: rgba(255, 176, 0, .38);
+
+  --hover: rgba(255, 176, 0, .07);
+  --selected: rgba(255, 176, 0, .12);
+
+  --danger: #FF6B5A;   --danger-soft: rgba(255, 107, 90, .14);
+  --success: #4AF6A0;  --success-soft: rgba(74, 246, 160, .13);
+  --warning: #FFB000;  --warning-soft: rgba(255, 176, 0, .14);
+
+  --tok-time-fg: #4AF6A0;        --tok-time-bg: rgba(74, 246, 160, .12);
+  --tok-clip-fg: #58C7FF;        --tok-clip-bg: rgba(88, 199, 255, .12);
+  --tok-rand-fg: #FF8AC2;        --tok-rand-bg: rgba(255, 138, 194, .12);
+  --tok-sys-fg: #56E0D0;         --tok-sys-bg: rgba(86, 224, 208, .12);
+  --tok-var-fg: #FFB000;         --tok-var-bg: rgba(255, 176, 0, .15);
+  --tok-unknown-fg: #FF6B5A;     --tok-unknown-bg: rgba(255, 107, 90, .13);
+  --tok-invalid-fg: #FFD166;     --tok-invalid-bg: rgba(255, 209, 102, .13);
+  --tok-missing-fg: #6B6862;     --tok-missing-bg: rgba(255, 255, 255, .06);
+
+  --shadow-frame: 0 0 0 1px rgba(255, 176, 0, .22), 0 24px 60px -20px rgba(0, 0, 0, .95);
+  --shadow-pop: 0 0 0 1px rgba(255, 176, 0, .26), 0 14px 34px -12px rgba(0, 0, 0, .85);
+  --shadow-inset: inset 0 0 0 1px rgba(255, 176, 0, .07);
+
+  --surface-translucent: rgba(10, 11, 12, .94);
+  --warning-border: rgba(255, 176, 0, .34);
+
+  --btn-glow: 0 0 18px -4px rgba(255, 176, 0, .55);
+  --focus-ring: 0 0 0 2px rgba(255, 176, 0, .30);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-style="cyberink"][data-theme="auto"] {
+    color-scheme: dark;
+
+    --surface: #0A0B0C;
+    --surface-2: #070809;
+    --surface-3: #15171A;
+    --surface-sunken: #0C0E10;
+    --titlebar: #101215;
+
+    --border: rgba(255, 176, 32, .14);
+    --border-strong: rgba(255, 176, 32, .30);
+    --border-faint: rgba(255, 255, 255, .06);
+
+    --text: #E9E6E1;
+    --text-2: #A6A29B;
+    --text-3: #6B6862;
+    --text-inv: #0A0B0C;
+
+    --accent: #FFB000;
+    --accent-strong: #FFC233;
+    --accent-soft: rgba(255, 176, 0, .13);
+    --accent-soft-2: rgba(255, 176, 0, .22);
+    --accent-border: rgba(255, 176, 0, .38);
+
+    --hover: rgba(255, 176, 0, .07);
+    --selected: rgba(255, 176, 0, .12);
+
+    --danger: #FF6B5A;   --danger-soft: rgba(255, 107, 90, .14);
+    --success: #4AF6A0;  --success-soft: rgba(74, 246, 160, .13);
+    --warning: #FFB000;  --warning-soft: rgba(255, 176, 0, .14);
+
+    --tok-time-fg: #4AF6A0;    --tok-time-bg: rgba(74, 246, 160, .12);
+    --tok-clip-fg: #58C7FF;    --tok-clip-bg: rgba(88, 199, 255, .12);
+    --tok-rand-fg: #FF8AC2;    --tok-rand-bg: rgba(255, 138, 194, .12);
+    --tok-sys-fg: #56E0D0;     --tok-sys-bg: rgba(86, 224, 208, .12);
+    --tok-var-fg: #FFB000;     --tok-var-bg: rgba(255, 176, 0, .15);
+    --tok-unknown-fg: #FF6B5A; --tok-unknown-bg: rgba(255, 107, 90, .13);
+    --tok-invalid-fg: #FFD166; --tok-invalid-bg: rgba(255, 209, 102, .13);
+    --tok-missing-fg: #6B6862; --tok-missing-bg: rgba(255, 255, 255, .06);
+
+    --shadow-frame: 0 0 0 1px rgba(255, 176, 0, .22), 0 24px 60px -20px rgba(0, 0, 0, .95);
+    --shadow-pop: 0 0 0 1px rgba(255, 176, 0, .26), 0 14px 34px -12px rgba(0, 0, 0, .85);
+    --shadow-inset: inset 0 0 0 1px rgba(255, 176, 0, .07);
+
+    --surface-translucent: rgba(10, 11, 12, .94);
+    --warning-border: rgba(255, 176, 0, .34);
+
+    --btn-glow: 0 0 18px -4px rgba(255, 176, 0, .55);
+    --focus-ring: 0 0 0 2px rgba(255, 176, 0, .30);
+  }
+}

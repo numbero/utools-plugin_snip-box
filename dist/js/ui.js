@@ -356,6 +356,8 @@ window.SBUI = (function () {
     html += '<div class="set-sec"><h3 class="set-sec-title">外观</h3>';
     html += row('主题', '跟随系统时会在 macOS 切换深浅色的瞬间同步',
       segHtml('theme', s.theme, [['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']]));
+    html += row('界面风格', '荧光墨是近黑底 + 琥珀荧光的全等宽终端美学；切换即时生效，浅/深各自适配',
+      segHtml('style', s.style, [['native', '靛蓝原生'], ['cyberink', '荧光墨']]));
     html += row('列表项显示渲染预览', '关闭后列表更紧凑，但看不到占位符的实际输出', switchHtml('showPreviewInList', s.showPreviewInList));
     html += row('预览中给占位符着色', '按来源分类上色，仅影响预览，不影响输出内容', switchHtml('colorTokens', s.colorTokens));
     html += '</div>';
