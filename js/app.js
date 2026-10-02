@@ -5,6 +5,7 @@
   var Store = window.SBStore;
   var UI = window.SBUI;
   var el = UI.el;
+  var Dialog = window.SBDialog;
 
   var LIST_HEIGHT = 544;
   var EDITOR_HEIGHT = 620;
@@ -20,19 +21,30 @@
     filter: { type: 'all' },
     editing: null,
     modal: null,
-    about: {}
+    about: {},
+    sort: 'smart', detailTab: 'preview', renderCache: Object.create(null)
   };
 
   var booted = false;
   var pendingEnter = null;
   var emptyTimer = null;
+  var searchTimer = null;
+  var outputBusy = false;
+  var saving = false;
+  var draftBaseline = null;
+  var lastError = null;
 
   function U() { return window.utools; }
 
   /* ---------- 主题 / 窗口 ---------- */
   function applyTheme() {
     document.documentElement.setAttribute('data-theme', state.settings.theme);
-    document.documentElement.setAttribute('data-style', state.settings.style);
+    document.documentElement.setAttribute('data-style', 'orange');
+    document.documentElement.setAttribute('data-layout', state.settings.layout || 'quick');
+    var manage = state.settings.layout === 'manage';
+    el('btnLayout').setAttribute('aria-pressed', String(manage));
+    el('btnLayout').setAttribute('title', manage ? '切换快速调用' : '切换管理视图');
+    el('btnLayout').querySelector('span').textContent = manage ? '快捷' : '管理';
   }
   function setHeight(px) {
     try { if (U() && U().setExpendHeight) U().setExpendHeight(px); } catch (e) { /* 预览环境无窗口 API */ }
@@ -73,6 +85,7 @@
         sys: res[1] || {},
         variables: {}
       };
+      state.renderCache = Object.create(null);
       return state.ctx;
     });
   }
@@ -110,79 +123,72 @@
     return mode;
   }
 
-  function doOutput(snippet, copyOnly, textOverride, exact) {
-    var text = textOverride;
-    if (text == null) {
-      text = E.render(snippet.content, renderOptsFor(snippet)).text;
-    }
-    var mode = exact ? (copyOnly ? 'copy' : 'paste') : effectiveMode(copyOnly);
-    if (mode === 'copy') {
-      U().copyText(text);
-      UI.toast('已复制 ' + text.length + ' 字符到剪贴板', 'ok');
-      Store.touchUse(snippet).then(function () {
-        if (state.view === 'list') UI.renderList(state);
-        try { U().outPlugin(); } catch (e) {}
-      });
-      return Promise.resolve();
-    }
-    Store.touchUse(snippet);
-    if (state.settings.pasteMode === 'typeString') {
-      U().hideMainWindowTypeString(text);
-    } else {
-      U().hideMainWindowPasteText(text);
-    }
-    return Promise.resolve();
+  function reportError(label, err) {
+    lastError = { message: label + '：' + (err && err.message || err), at: new Date().toISOString() };
+    UI.toast(lastError.message, 'info');
   }
-
-  function enterOutput(snippet, copyOnly) {
-    var r = E.render(snippet.content, renderOptsFor(snippet));
-    if (r.variables.length) {
-      openModal(snippet);
-      return;
-    }
-    doOutput(snippet, !!copyOnly);
+  function outputApi(mode, text) {
+    return Promise.resolve().then(function () {
+      var fn = mode === 'copy' ? 'copyText' : (state.settings.pasteMode === 'typeString' ? 'hideMainWindowTypeString' : 'hideMainWindowPasteText');
+      if (!U() || typeof U()[fn] !== 'function') throw new Error('当前环境不支持此输出方式');
+      return U()[fn](text);
+    }).then(function (result) { if (result === false) throw new Error('输出未成功'); });
+  }
+  function doOutput(snippet, mode, text) {
+    if (!snippet || outputBusy) return Promise.resolve(false);
+    outputBusy = true;
+    return outputApi(mode, text).then(function () {
+      if (mode === 'copy') UI.toast('已复制 ' + text.length + ' 字符', 'ok');
+      return Store.touchUse(snippet).catch(function (err) { reportError('内容已输出，使用记录更新失败', err); }).then(function () {
+        if (state.view === 'list') UI.renderList(state);
+        if (mode === 'copy') { try { U().outPlugin(); } catch (e) {} }
+        return true;
+      });
+    }, function (err) {
+      if (mode === 'copy') { reportError('复制失败', err); return false; }
+      return outputApi('copy', text).then(function () {
+        UI.toast('粘贴失败，内容已复制，请手动粘贴', 'info');
+        try { U().showNotification('粘贴失败，内容已复制到剪贴板，请手动粘贴。'); } catch (e) {}
+        lastError = { message: String(err.message || err), at: new Date().toISOString() };
+        return false;
+      }, function (copyErr) { reportError('粘贴和备用复制均失败', copyErr); return false; });
+    }).then(function (ok) { outputBusy = false; return ok; }, function (err) { outputBusy = false; reportError('输出失败', err); return false; });
+  }
+  function enterOutput(snippet, invert, exactMode) {
+    if (!snippet || outputBusy) return;
+    var mode = exactMode || effectiveMode(invert);
+    var r = UI.renderSnippet(state, snippet);
+    if (r.variables.length) { openModal(snippet, mode); return; }
+    return doOutput(snippet, mode, r.text);
   }
 
   /* ---------- 变量弹框 ---------- */
-  function openModal(snippet) {
-    var r = E.render(snippet.content, renderOptsFor(snippet));
-    var fields = [];
-    var seen = {};
-    r.variables.forEach(function (v) {
-      if (!seen[v.name]) { seen[v.name] = true; fields.push(v); }
-    });
-    var values = {};
-    fields.forEach(function (f) { if (f.defaultValue) values[f.name] = f.defaultValue; });
-    state.modal = { snippet: snippet, fields: fields, values: values };
+  function openModal(snippet, mode) {
+    var fields = UI.renderSnippet(state, snippet).variables;
+    var values = Object.create(null);
+    fields.forEach(function (f) { values[f.name] = f.defaultValue || ''; });
+    state.modal = { snippet: snippet, fields: fields, values: values, mode: mode || effectiveMode(false), previousFocus: document.activeElement };
     el('varScrim').hidden = false;
-    UI.renderVarFields(state);
-    UI.renderVarPreview(state);
+    el('viewList').setAttribute('aria-hidden', 'true');
+    UI.renderVarFields(state); UI.renderVarPreview(state);
     var first = el('varFields').querySelector('input');
     if (first) first.focus();
   }
-
   function closeModal() {
-    state.modal = null;
-    el('varScrim').hidden = true;
+    var previous = state.modal && state.modal.previousFocus;
+    state.modal = null; el('varScrim').hidden = true;
+    el('viewList').removeAttribute('aria-hidden');
+    if (previous && previous.isConnected && previous.getClientRects().length) previous.focus();
+    else if (state.view === 'list') el('list').focus();
   }
-
-  function readModalValues() {
+  function modalOutput(alternate) {
+    if (!state.modal) return;
+    var m = state.modal;
     var inputs = el('varFields').querySelectorAll('input');
-    for (var i = 0; i < inputs.length; i++) {
-      state.modal.values[inputs[i].getAttribute('data-var')] = inputs[i].value;
-    }
-  }
-
-  function modalOutput(copyOnly) {
-    readModalValues();
-    var ctx = {
-      now: state.ctx.now, clipboard: state.ctx.clipboard, folder: state.ctx.folder,
-      url: state.ctx.url, sys: state.ctx.sys, variables: state.modal.values
-    };
-    var text = E.render(state.modal.snippet.content, { context: ctx, delimiter: state.settings.delimiter }).text;
-    var snippet = state.modal.snippet;
-    closeModal();
-    doOutput(snippet, copyOnly, text, true);
+    for (var i = 0; i < inputs.length; i++) m.values[inputs[i].getAttribute('data-var')] = inputs[i].value;
+    var mode = alternate ? (m.mode === 'copy' ? 'paste' : 'copy') : m.mode;
+    var text = UI.renderSnippet(state, m.snippet, m.values).text;
+    doOutput(m.snippet, mode, text).then(function (ok) { if (ok && state.modal === m) closeModal(); });
   }
 
   /* ---------- 编辑器 ---------- */
@@ -192,19 +198,32 @@
     state.view = 'editor';
     UI.showView('editor');
     UI.syncEditorFields(state);
+    draftBaseline = draftSignature(readDraft());
+    updateDirty();
+    el('edError').hidden = true;
     UI.renderPop();
     setHeight(EDITOR_HEIGHT);
     el('edDelete').hidden = !draft.id;
     el('edName').focus();
   }
 
-  function backToList() {
+  function backToList(force) {
+    if (state.view === 'editor' && force !== true && isDirty()) {
+      return Dialog.open({title:'保存本次修改？', message:'离开编辑器前，可以保存修改或放弃本次修改。', actions:[
+        {value:'cancel',label:'继续编辑'}, {value:'discard',label:'放弃修改'}, {value:'save',label:'保存并返回',primary:true}
+      ]}).then(function (choice) { if (choice === 'discard') backToList(true); if (choice === 'save') saveDraft(); });
+    }
     state.view = 'list';
     state.editing = null;
     UI.showView('list');
     setHeight(LIST_HEIGHT);
     renderAll();
+    el('searchInput').focus();
   }
+
+  function draftSignature(d) { return JSON.stringify([d.name,d.content,d.group,d.searchKey,d.keyword,d.direct,d.pinned]); }
+  function isDirty() { return state.editing && draftSignature(readDraft()) !== draftBaseline; }
+  function updateDirty() { if (state.editing) el('edDirty').textContent = isDirty() ? '未保存' : '未修改'; }
 
   function readDraft() {
     var d = state.editing;
@@ -218,25 +237,37 @@
     return d;
   }
 
-  function saveDraft() {
-    var d = readDraft();
-    if (!d.name) {
-      el('edName').classList.add('is-error');
-      el('edName').focus();
-      UI.toast('先给片段起个名字', 'info');
-      return;
-    }
-    Store.saveSnippet(d).then(function (saved) {
-      var idx = -1;
-      for (var i = 0; i < state.snippets.length; i++) if (state.snippets[i].id === saved.id) idx = i;
-      if (idx >= 0) state.snippets[idx] = saved; else state.snippets.push(saved);
-      state.activeId = saved.id;
-      syncFeatures();
-      UI.toast('已保存', 'ok');
-      backToList();
-    }).catch(function (err) {
-      UI.toast('保存失败：' + (err && err.message || err), 'info');
+  function keywordProblem(d, prefix) {
+    if (!d.direct) return '';
+    if (d.keyword.length < 2) return '直达关键字至少需要 2 个字符';
+    var key = (prefix + d.keyword).toLowerCase();
+    if (state.snippets.some(function (x) { return x.id !== d.id && x.direct && (prefix + x.keyword).toLowerCase() === key; })) return '直达关键字与其他片段重复';
+    var features = [];
+    try { features = U().getFeatures() || []; } catch (e) {}
+    var conflict = features.some(function (f) {
+      if (f.code === 'snip:' + d.id || (f.code || '').indexOf('snip:') === 0) return false;
+      return (f.cmds || []).some(function (c) { return typeof c === 'string' && c.toLowerCase() === key; });
     });
+    return conflict ? '直达关键字与已有入口指令冲突' : '';
+  }
+  function saveDraft() {
+    if (saving || !state.editing) return Promise.resolve(false);
+    var d = readDraft();
+    var problem = !d.name ? '请填写片段名称' : !d.content.trim() ? '请填写模板内容' : d.content.length > 20000 ? '模板内容不能超过 20,000 字符' : keywordProblem(d, state.settings.directPrefix);
+    if (problem) {
+      el('edError').textContent = problem; el('edError').hidden = false;
+      (!d.name ? el('edName') : el('edTpl')).focus();
+      return Promise.resolve(false);
+    }
+    saving = true; el('edSave').disabled = true;
+    return Store.saveSnippet(d).then(function (saved) {
+      replaceSnippet(saved);
+      state.activeId = saved.id;
+      syncFeatures(); UI.toast('已保存', 'ok'); backToList(true); return true;
+    }).catch(function (err) {
+      el('edError').textContent = '保存失败：' + (err.message || err); el('edError').hidden = false;
+      reportError('保存失败', err); return false;
+    }).then(function (ok) { saving = false; el('edSave').disabled = false; return ok; });
   }
 
   function deleteSnippet(id) {
@@ -246,9 +277,74 @@
       state.snippets = state.snippets.filter(function (x) { return x.id !== id; });
       syncFeatures();
       UI.toast('已删除', 'ok');
-      backToList();
+      backToList(true);
     }).catch(function (err) {
       UI.toast('删除失败：' + (err && err.message || err), 'info');
+    });
+  }
+
+  function confirmDelete(s) {
+    return Dialog.open({title:'删除「' + s.name + '」？', message:'删除后无法撤销。',actions:[{value:'cancel',label:'取消'},{value:'delete',label:'删除片段',danger:true}]}).then(function (choice) {
+      if (choice) deleteSnippet(s.id);
+    });
+  }
+  function snippetAction(action, id) {
+    var s = findById(id);
+    if (!s) return;
+    if (action === 'copy') return enterOutput(s, false, 'copy');
+    if (action === 'output') return enterOutput(s, false);
+    if (action === 'edit') return openEditor(cloneSnippet(s));
+    if (action === 'delete') return confirmDelete(s);
+    if (action === 'duplicate') {
+      var draft = cloneSnippet(s);
+      delete draft.id; delete draft._rev;
+      draft.name = (s.name + ' 副本').slice(0, 200);
+      draft.direct = false; draft.keyword = ''; draft.useCount = 0; draft.lastUsedAt = '';
+      delete draft.createdAt; delete draft.updatedAt;
+      return openEditor(draft);
+    }
+    if (action === 'pin') {
+      var changed = cloneSnippet(s); changed.pinned = !changed.pinned;
+      return Store.saveSnippet(changed).then(function (saved) { replaceSnippet(saved); renderAll(); }).catch(function (err) { reportError('置顶更新失败', err); });
+    }
+    if (action === 'more') {
+      return Dialog.open({title:s.name,actions:[{value:'cancel',label:'取消'},{value:'duplicate',label:'创建副本'},{value:'delete',label:'删除片段',danger:true}]}).then(function (choice) { if (choice) snippetAction(choice, id); });
+    }
+  }
+  function editGroup(group) {
+    return Dialog.open({title:group ? '重命名分组' : '新建分组',label:'分组名称',input:group ? group.name : '',maxLength:200,
+      validate:function (name) { return !name ? '请输入分组名称' : state.groups.some(function (g) { return (!group || g.id !== group.id) && g.name === name; }) ? '已有同名分组' : ''; },
+      actions:[{value:'cancel',label:'取消'},{value:'save',label:'保存分组',primary:true}]
+    }).then(function (name) {
+      if (name === null) return;
+      var groups = state.groups.map(function (g) { return group && g.id === group.id ? Object.assign({}, g, {name:name}) : g; });
+      if (!group) groups.push({id:'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),name:name});
+      return Store.saveGroups(groups).then(function () { state.groups = groups; renderAll(); }).catch(function (err) { reportError('分组保存失败', err); });
+    });
+  }
+  function groupMenu(id) {
+    var group = state.groups.filter(function (g) { return g.id === id; })[0];
+    if (!group) return;
+    Dialog.open({title:group.name,actions:[{value:'cancel',label:'取消'},{value:'rename',label:'重命名'},{value:'delete',label:'删除分组',danger:true}]}).then(function (choice) {
+      if (choice === 'rename') editGroup(group);
+      if (choice === 'delete') Dialog.open({title:'删除「' + group.name + '」分组？',message:'组内片段会保留，并移到未分组。',actions:[{value:'cancel',label:'取消'},{value:'delete',label:'删除分组',danger:true}]}).then(function (confirm) {
+        if (!confirm) return;
+        var ledger = [];
+        var chain = Promise.resolve();
+        state.snippets.filter(function (s) { return s.group === id; }).forEach(function (s) {
+          chain = chain.then(function () { var changed = cloneSnippet(s); changed.group = ''; return Store.saveSnippet(changed).then(function (saved) { ledger.push({before:s,after:saved}); }); });
+        });
+        var groups = state.groups.filter(function (g) { return g.id !== id; });
+        chain.then(function () { return Store.saveGroups(groups); }).then(function () {
+          ledger.forEach(function (x) { replaceSnippet(x.after); }); state.groups = groups;
+          if (state.filter.id === id) state.filter = {type:'all'};
+          renderAll(); UI.toast('分组已删除，片段已移到未分组', 'ok');
+        }).catch(function (err) {
+          var rollback = Promise.resolve();
+          ledger.reverse().forEach(function (x) { rollback = rollback.then(function () { var restored = cloneSnippet(x.before); restored._rev = x.after._rev; return Store.saveSnippet(restored); }).catch(function () {}); });
+          rollback.then(function () { return Store.loadAll(); }).then(function (data) { state.snippets = data.snippets; state.groups = data.groups; renderAll(); reportError('分组删除未完成，请检查分组后重试', err); });
+        });
+      });
     });
   }
 
@@ -277,18 +373,21 @@
     try { existing = U().getFeatures() || []; } catch (e) { existing = []; }
     existing.forEach(function (f) {
       if (f && f.code && f.code.indexOf('snip:') === 0 && !want[f.code]) {
-        try { U().removeFeature(f.code); } catch (e) {}
+        try { if (U().removeFeature(f.code) === false) throw new Error(f.code); } catch (e) { reportError('直达指令清理失败', e); }
       }
     });
     Object.keys(want).forEach(function (code) {
-      try { U().setFeature(want[code]); } catch (e) {}
+      try { if (U().setFeature(want[code]) === false) throw new Error(want[code].explain); } catch (e) { reportError('直达指令注册失败', e); }
     });
   }
 
   /* ---------- 设置 ---------- */
   function patchSettings(obj) {
-    for (var k in obj) state.settings[k] = obj[k];
-    Store.saveSettings(state.settings);
+    var next = Object.assign({}, state.settings, obj);
+    var problem = state.snippets.map(function (x) { return keywordProblem(x, next.directPrefix); }).filter(Boolean)[0];
+    if (problem && Object.prototype.hasOwnProperty.call(obj, 'directPrefix')) { UI.toast(problem, 'info'); refreshAboutThenSettings(); return; }
+    try { Store.saveSettings(next); state.settings = Store.getSettings(); } catch (e) { reportError('设置保存失败', e); return; }
+    state.renderCache = Object.create(null);
     applyTheme();
     syncFeatures();
     if (state.view === 'settings') refreshAboutThenSettings();
@@ -343,17 +442,21 @@
     if (Array.isArray(path)) path = path[0];
     window.api.readFile(path).then(function (text) {
       var obj = JSON.parse(text);
-      return Store.importObject(obj, state);
+      return Store.planImport(obj, state).then(function (plan) {
+        return Dialog.open({title:'导入备份',message:'新增 ' + plan.added + ' 条（含冲突副本 ' + plan.copies + ' 条），跳过 ' + plan.skipped + ' 条。' + (plan.restoreSettings ? '\n同时恢复备份中的设置。' : ''), actions:[{value:'cancel',label:'取消'},{value:'import',label:'确认导入',primary:true}]}).then(function (choice) { return choice ? Store.importObject(obj, state) : null; });
+      });
     }).then(function (res) {
+      if (!res) return;
       return Store.loadAll().then(function (data) {
         state.snippets = data.snippets;
         state.groups = data.groups;
-        syncFeatures();
-        renderAll();
-        UI.toast('导入完成：新增 ' + res.added + ' · 覆盖 ' + res.updated, 'ok');
+        state.settings = Store.getSettings(); state.renderCache = Object.create(null); applyTheme();
+        syncFeatures(); renderAll(); refreshAboutThenSettings();
+        UI.toast('导入完成：新增 ' + res.added + ' · 副本 ' + res.copies + ' · 跳过 ' + res.skipped, 'ok');
       });
     }).catch(function (err) {
-      UI.toast('导入失败：' + err.message, 'info');
+      Store.loadAll().then(function (data) { state.snippets = data.snippets; state.groups = data.groups; state.settings = Store.getSettings(); applyTheme(); syncFeatures(); renderAll(); });
+      Dialog.open({title:'导入未完成',message:err.message,actions:[{value:'ok',label:'知道了',primary:true}]});
     });
   }
 
@@ -367,6 +470,7 @@
         hasFolder: !!(state.ctx && state.ctx.folder),
         hasUrl: !!(state.ctx && state.ctx.url)
       },
+      lastError: lastError,
       ua: navigator.userAgent
     };
     U().copyText(JSON.stringify(info, null, 2));
@@ -374,6 +478,9 @@
   }
 
   function clearSeed() {
+    return Dialog.open({title:'清空示例片段？',message:'将删除首次导入的示例片段，包括你对示例的修改。',actions:[{value:'cancel',label:'取消'},{value:'delete',label:'清空示例',danger:true}]}).then(function (choice) { if (choice) clearSeedConfirmed(); });
+  }
+  function clearSeedConfirmed() {
     var ids = Store.getFlag('seededIds') || [];
     if (!ids.length) { UI.toast('没有示例数据可清', 'info'); return; }
     var chain = Promise.resolve();
@@ -392,7 +499,7 @@
       syncFeatures();
       renderAll();
       UI.toast('示例已清空', 'ok');
-    });
+    }).catch(function (err) { reportError('清空失败', err); });
   }
 
   function seed() {
@@ -412,6 +519,7 @@
   /* ---------- 进入分发 ---------- */
   function handleEnter(arg) {
     captureContext().then(function () {
+      if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return; }
       var code = arg && arg.code;
       if (code && code.indexOf('snip:') === 0) {
         var s = findById(code.slice(5));
@@ -421,14 +529,15 @@
           state.view = 'list';
           UI.showView('list');
           renderAll();
-          openModal(s);
+          openModal(s, effectiveMode(false));
         } else {
-          doOutput(s, false);
-          try { U().outPlugin(); } catch (e) {}
+          enterOutput(s, false);
         }
         return;
       }
+      if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return; }
       state.view = 'list';
+      if (arg && arg.type === 'text' && typeof arg.payload === 'string') { state.query = arg.payload; el('searchInput').value = state.query; el('searchClear').hidden = !state.query; }
       UI.showView('list');
       renderAll();
       el('searchInput').focus();
@@ -440,10 +549,11 @@
     el('searchInput').addEventListener('input', function () {
       state.query = this.value;
       el('searchClear').hidden = !this.value;
-      UI.renderList(state);
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { UI.renderList(state); }, 80);
     });
     el('searchInput').addEventListener('keydown', function (ev) {
-      if (ev.key === 'ArrowDown') { ev.preventDefault(); el('list').focus(); }
+      if (ev.key === 'ArrowDown' && !ev.isComposing) { el('list').focus(); }
     });
     el('searchClear').addEventListener('click', function () {
       state.query = '';
@@ -461,49 +571,49 @@
       refreshAboutThenSettings();
     });
 
-    el('sidebar').addEventListener('click', function (ev) {
+    function filterClick(ev) {
+      var menu = ev.target.closest('[data-group-act]');
+      if (menu) { groupMenu(menu.getAttribute('data-id')); return; }
       var btn = ev.target.closest('[data-filter]');
       if (!btn) return;
       var f = btn.getAttribute('data-filter');
-      if (f === '__addgroup') {
-        var name = window.prompt('新分组名称');
-        if (name && name.trim()) {
-          state.groups.push({ id: 'g' + Date.now().toString(36), name: name.trim() });
-          Store.saveGroups(state.groups).then(function () { UI.renderSidebar(state); });
-        }
-        return;
+      if (f === '__addgroup') { editGroup(); return; }
+      if (f === '__managegroups') {
+        Dialog.open({title:'管理分组',actions:[{value:'cancel',label:'取消'}].concat(state.groups.map(function (g) { return {value:g.id,label:g.name}; }))}).then(function (id) { if (id) groupMenu(id); }); return;
       }
-      state.filter = { type: f, id: btn.getAttribute('data-id') || '' };
-      UI.renderSidebar(state);
-      UI.renderList(state);
+      state.filter = {type:f,id:btn.getAttribute('data-id') || ''};
+      UI.renderSidebar(state); UI.renderList(state);
+    }
+    el('sidebar').addEventListener('click', filterClick);
+    el('filterBar').addEventListener('click', filterClick);
+    el('btnLayout').addEventListener('click', function () { patchSettings({layout:state.settings.layout === 'manage' ? 'quick' : 'manage'}); });
+    el('sortSelect').addEventListener('change', function () { state.sort = this.value; UI.renderList(state); });
+    el('detailPane').addEventListener('click', function (ev) {
+      var tab = ev.target.closest('[data-detail-tab]');
+      if (tab) { state.detailTab = tab.getAttribute('data-detail-tab'); UI.renderDetail(state); return; }
+      var action = ev.target.closest('[data-detail-act]');
+      if (action) snippetAction(action.getAttribute('data-detail-act'), state.activeId);
     });
 
     var list = el('list');
     list.addEventListener('click', function (ev) {
+      var empty = ev.target.closest('[data-list-act]');
+      if (empty) {
+        var todo = empty.getAttribute('data-list-act');
+        if (todo === 'new') openEditor(blankDraft());
+        else { if (todo === 'all') state.filter = {type:'all'}; state.query = ''; el('searchInput').value = ''; el('searchClear').hidden = true; renderAll(); }
+        return;
+      }
       var act = ev.target.closest('[data-act]');
       var row = ev.target.closest('.list-item');
       if (!row) return;
       var id = row.getAttribute('data-id');
-      if (act) {
-        var a = act.getAttribute('data-act');
-        if (a === 'copy') doOutput(findById(id), true, null, true);
-        if (a === 'pin') {
-          var s = findById(id);
-          s.pinned = !s.pinned;
-          Store.saveSnippet(s).then(function (saved) {
-            replaceSnippet(saved);
-            syncFeatures();
-            UI.renderList(state);
-            UI.renderSidebar(state);
-          });
-        }
-        if (a === 'edit') openEditor(cloneSnippet(findById(id)));
-        return;
-      }
+      if (act) { snippetAction(act.getAttribute('data-act'), id); return; }
       state.activeId = id;
       UI.renderList(state);
     });
     list.addEventListener('dblclick', function (ev) {
+      if (ev.target.closest('button')) return;
       var row = ev.target.closest('.list-item');
       if (!row) return;
       enterOutput(findById(row.getAttribute('data-id')));
@@ -524,18 +634,21 @@
     el('edSave').addEventListener('click', saveDraft);
     el('edDelete').addEventListener('click', function () {
       var d = state.editing;
-      if (d && d.id && window.confirm('删除片段「' + d.name + '」？此操作不可撤销。')) deleteSnippet(d.id);
+      if (d && d.id) confirmDelete(d);
     });
     el('edPinned').addEventListener('click', function () {
       this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true');
+      updateDirty();
     });
     el('edDirect').addEventListener('click', function () {
       var on = this.getAttribute('aria-checked') !== 'true';
       this.setAttribute('aria-checked', String(on));
       el('edDirectKey').disabled = !on;
       if (on) el('edDirectKey').focus();
+      updateDirty();
     });
-    el('edTpl').addEventListener('input', function () { UI.renderEditorPreview(state); });
+    el('viewEditor').addEventListener('input', function () { updateDirty(); el('edError').hidden = true; UI.renderEditorPreview(state); });
+    el('edGroup').addEventListener('change', updateDirty);
     el('edRefreshCtx').addEventListener('click', function () {
       captureContext().then(function () {
         UI.renderEditorPreview(state);
@@ -550,6 +663,7 @@
       if (!item) return;
       insertAtCursor(el('edTpl'), item.getAttribute('data-insert'));
       el('edPop').hidden = true;
+      updateDirty();
       UI.renderEditorPreview(state);
     });
 
@@ -594,14 +708,9 @@
     });
     el('setBack').addEventListener('click', backToList);
     el('setReset').addEventListener('click', function () {
-      if (!window.confirm('恢复全部默认设置？')) return;
-      state.settings = JSON.parse(JSON.stringify(Store.DEFAULT_SETTINGS));
-      Store.saveSettings(state.settings);
-      applyTheme();
-      syncFeatures();
-      refreshAboutThenSettings();
-      renderAll();
-      UI.toast('已恢复默认', 'ok');
+      Dialog.open({title:'恢复默认设置？',message:'片段和分组会保留。',actions:[{value:'cancel',label:'取消'},{value:'reset',label:'恢复默认',primary:true}]}).then(function (choice) {
+        if (choice) { patchSettings(Object.assign({}, Store.DEFAULT_SETTINGS)); UI.toast('已恢复默认', 'ok'); }
+      });
     });
 
     /* 变量弹框 */
@@ -612,6 +721,7 @@
       inp.classList.toggle('is-empty', !inp.value);
       UI.renderVarPreview(state);
     });
+    el('varCancel').addEventListener('click', closeModal);
     el('varPaste').addEventListener('click', function () { modalOutput(false); });
     el('varCopy').addEventListener('click', function () { modalOutput(true); });
     el('varScrim').addEventListener('click', function (ev) {
@@ -623,9 +733,17 @@
       var tag = (ev.target.tagName || '').toLowerCase();
       var typing = tag === 'input' || tag === 'textarea' || tag === 'select';
 
+      if (ev.isComposing || ev.keyCode === 229 || Dialog.active()) return;
       if (!el('varScrim').hidden) {
+        Dialog.trap(ev, el('varScrim'));
         if (ev.key === 'Escape') { ev.preventDefault(); closeModal(); }
-        if (ev.key === 'Enter') { ev.preventDefault(); modalOutput(ev.altKey); }
+        if (ev.key === 'Enter' && (ev.target.tagName === 'INPUT' || ev.metaKey || ev.ctrlKey)) {
+          ev.preventDefault();
+          var fields = Array.prototype.slice.call(el('varFields').querySelectorAll('input'));
+          var position = fields.indexOf(ev.target);
+          if (!ev.metaKey && !ev.ctrlKey && !ev.altKey && position >= 0 && position < fields.length - 1) fields[position + 1].focus();
+          else modalOutput(ev.altKey && state.settings.invertModifier !== false);
+        }
         return;
       }
       if (state.view === 'editor') {
@@ -638,6 +756,8 @@
         return;
       }
       /* 列表视图 */
+      if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'n') { ev.preventDefault(); openEditor(blankDraft()); return; }
+      if (tag === 'button' || tag === 'select') return;
       if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'e') {
         if (state.activeId) { ev.preventDefault(); openEditor(cloneSnippet(findById(state.activeId))); }
         return;
@@ -669,6 +789,10 @@
     });
 
     window.addEventListener('resize', onResize);
+    document.addEventListener('focusin', function (ev) {
+      if (state.modal && !el('varScrim').contains(ev.target) && !Dialog.active()) { var first = el('varFields').querySelector('input'); if (first) first.focus(); }
+    });
+    window.addEventListener('beforeunload', function (ev) { if (state.view === 'editor' && isDirty()) { ev.preventDefault(); ev.returnValue = ''; } });
   }
 
   function scrollActiveIntoView() {
@@ -694,6 +818,7 @@
     for (var i = 0; i < state.snippets.length; i++) {
       if (state.snippets[i].id === saved.id) { state.snippets[i] = saved; return; }
     }
+    state.snippets.push(saved);
   }
 
   /* ---------- 引导 ---------- */
@@ -702,6 +827,7 @@
     applyTheme();
     onResize();
     bindEvents();
+    setInterval(function () { if (state.ctx && state.view === 'list' && !state.modal && !Dialog.active()) { state.ctx.now = new Date(); state.renderCache = Object.create(null); UI.renderList(state); } }, 60000);
     try {
       U().onPluginEnter(function (arg) {
         if (!booted) { pendingEnter = arg; return; }

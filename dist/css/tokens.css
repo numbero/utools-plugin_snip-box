@@ -1,370 +1,98 @@
-/* ==========================================================================
-   Snippet Box · 设计令牌 Design Tokens
-   两套主题（浅/深）+ 占位符分类色。全部走 CSS 变量，切换只改 :root 上的
-   data-theme 属性。阶段三插件直接复用本文件。
-   ========================================================================== */
-
+/* Snippet Box · 活力橙主题。浅色、深色与跟随系统共用同一组语义令牌。 */
 :root {
-  /* ---------- 字体 ---------- */
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
-             "Helvetica Neue", system-ui, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-
-  --fs-11: 11px;  --lh-11: 15px;
-  --fs-12: 12px;  --lh-12: 17px;
-  --fs-13: 13px;  --lh-13: 19px;
-  --fs-14: 14px;  --lh-14: 21px;
-  --fs-16: 16px;  --lh-16: 24px;
-  --fs-20: 20px;  --lh-20: 28px;
-
-  /* ---------- 间距（4px 基准栅格） ---------- */
-  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "PingFang SC", monospace;
+  --fs-11: 11px; --lh-11: 16px; --fs-12: 12px; --lh-12: 18px;
+  --fs-13: 13px; --lh-13: 20px; --fs-14: 14px; --lh-14: 21px;
+  --fs-16: 16px; --lh-16: 24px; --fs-20: 20px; --lh-20: 28px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
   --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
-
-  /* ---------- 圆角 ---------- */
   --r-xs: 3px; --r-sm: 5px; --r-md: 7px; --r-lg: 10px; --r-xl: 14px;
-
-  /* ---------- 尺寸 ---------- */
-  --sidebar-w: 156px;
-  --titlebar-h: 38px;
-  --searchbar-h: 46px;
-  --statusbar-h: 30px;
+  --sidebar-w: 148px; --searchbar-h: 62px; --statusbar-h: 34px;
 }
-
-/* ==========================================================================
-   浅色主题
-   ========================================================================== */
 :root, :root[data-theme="light"] {
   color-scheme: light;
-
-  /* 设计稿页面（窗口之外的展板背景） */
-  --sheet-bg: #E8E8EC;
-  --sheet-bg-grad: radial-gradient(1200px 600px at 20% -10%, #F4F4F7 0%, #E4E4E9 60%);
-  --sheet-text: #2A2A30;
-  --sheet-text-dim: #6E6E78;
-  --sheet-card: #FFFFFF;
-
-  /* 插件窗口内部 */
-  --surface: #FFFFFF;
-  --surface-2: #F6F6F8;
-  --surface-3: #EFEFF2;
-  --surface-sunken: #FAFAFB;
-  --titlebar: #F2F2F5;
-
-  --border: rgba(0, 0, 0, .085);
-  --border-strong: rgba(0, 0, 0, .15);
-  --border-faint: rgba(0, 0, 0, .05);
-
-  --text: #1A1A1E;
-  --text-2: #5D5D66;
-  --text-3: #94949D;
-  --text-inv: #FFFFFF;
-
-  --accent: #5B6BD6;
-  --accent-strong: #4857C4;
-  --accent-soft: rgba(91, 107, 214, .10);
-  --accent-soft-2: rgba(91, 107, 214, .18);
-  --accent-border: rgba(91, 107, 214, .32);
-
-  --hover: rgba(0, 0, 0, .035);
-  --selected: rgba(91, 107, 214, .09);
-
-  --danger: #CE3B3B;   --danger-soft: rgba(206, 59, 59, .10);
-  --success: #1F8A54;  --success-soft: rgba(31, 138, 84, .10);
-  --warning: #B0740F;  --warning-soft: rgba(176, 116, 15, .12);
-
-  /* 占位符分类色 */
-  --tok-time-fg: #1C7A4C;        --tok-time-bg: rgba(31, 138, 84, .11);
-  --tok-clip-fg: #2458B8;        --tok-clip-bg: rgba(37, 99, 201, .11);
-  --tok-rand-fg: #7E3DBE;        --tok-rand-bg: rgba(139, 70, 201, .11);
-  --tok-sys-fg: #0C6E77;         --tok-sys-bg: rgba(14, 124, 134, .11);
-  --tok-var-fg: #4857C4;         --tok-var-bg: rgba(91, 107, 214, .13);
-  --tok-unknown-fg: #C0332F;     --tok-unknown-bg: rgba(206, 59, 59, .11);
-  --tok-invalid-fg: #9C6508;     --tok-invalid-bg: rgba(176, 116, 15, .14);
-  --tok-missing-fg: #8A8A93;     --tok-missing-bg: rgba(0, 0, 0, .045);
-
-  --shadow-frame: 0 24px 60px -18px rgba(20, 20, 30, .38), 0 2px 8px rgba(20, 20, 30, .10);
-  --shadow-pop: 0 12px 32px -8px rgba(20, 20, 30, .28), 0 0 0 1px rgba(0, 0, 0, .06);
-  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .05);
-
-  /* color-mix() 在 Chromium 91 不可用，改用预先算好的半透明令牌 */
-  --sheet-head-bg: rgba(232, 232, 236, .78);
-  --surface-translucent: rgba(255, 255, 255, .90);
-  --warning-border: rgba(176, 116, 15, .28);
+  --surface: #ffffff; --surface-2: #fafafa; --surface-3: #f1f2f3;
+  --surface-sunken: #fafafa; --titlebar: #fafafa;
+  --border: #e6e7e9; --border-strong: #d5d8dc; --border-faint: #eef0f2;
+  --text: #26292d; --text-2: #60666f; --text-3: #767c85; --text-inv: #2b1505;
+  --accent: #b64e0c; --accent-strong: #983d06;
+  --action-bg: #ff8524; --action-hover: #ff9c4e;
+  --accent-soft: #fff0e4; --accent-soft-2: #ffe0c5; --accent-border: #f5c7a3;
+  --hover: #f0f1f3; --selected: #ffead8;
+  --danger: #bc4249; --danger-soft: #fcebec;
+  --success: #27764f; --success-soft: #e9f5ed;
+  --warning: #986322; --warning-soft: #fbf1de; --warning-border: #ead6b0;
+  --tok-time-fg: #27764f; --tok-time-bg: #e9f5ed;
+  --tok-clip-fg: #326b9b; --tok-clip-bg: #eaf2fa;
+  --tok-rand-fg: #60666f; --tok-rand-bg: #f1f2f3;
+  --tok-sys-fg: #326b9b; --tok-sys-bg: #eaf2fa;
+  --tok-var-fg: #b64e0c; --tok-var-bg: #fff0e4;
+  --tok-unknown-fg: #bc4249; --tok-unknown-bg: #fcebec;
+  --tok-invalid-fg: #bc4249; --tok-invalid-bg: #fcebec;
+  --tok-missing-fg: #986322; --tok-missing-bg: #fbf1de;
+  --group-1: #eb7b25; --group-2: #4688c6; --group-3: #3f9b76;
+  --group-4: #d3a23c; --group-5: #ce7771; --group-6: #47a3ac; --group-7: #88929e;
+  --shadow-pop: 0 20px 56px #22262b30, 0 3px 12px #22262b0d;
+  --shadow-inset: inset 0 1px 2px #22262b08;
+  --action-shadow: 0 3px 12px #ff852418;
+  --focus-ring: 0 0 0 3px #ff852430; --overlay: #26292d66;
 }
-
-/* ==========================================================================
-   深色主题
-   ========================================================================== */
 :root[data-theme="dark"] {
   color-scheme: dark;
-
-  --sheet-bg: #0E0E11;
-  --sheet-bg-grad: radial-gradient(1200px 600px at 20% -10%, #1A1A20 0%, #0C0C0F 60%);
-  --sheet-text: #E6E6EA;
-  --sheet-text-dim: #8B8B95;
-  --sheet-card: #17171B;
-
-  --surface: #1E1E22;
-  --surface-2: #19191D;
-  --surface-3: #141417;
-  --surface-sunken: #1A1A1E;
-  --titlebar: #232327;
-
-  --border: rgba(255, 255, 255, .085);
-  --border-strong: rgba(255, 255, 255, .17);
-  --border-faint: rgba(255, 255, 255, .05);
-
-  --text: #ECECEF;
-  --text-2: #A3A3AD;
-  --text-3: #6D6D77;
-  --text-inv: #14141A;
-
-  --accent: #8290F5;
-  --accent-strong: #9BA7F8;
-  --accent-soft: rgba(130, 144, 245, .16);
-  --accent-soft-2: rgba(130, 144, 245, .26);
-  --accent-border: rgba(130, 144, 245, .40);
-
-  --hover: rgba(255, 255, 255, .05);
-  --selected: rgba(130, 144, 245, .14);
-
-  --danger: #F2736C;   --danger-soft: rgba(242, 115, 108, .15);
-  --success: #5CC98C;  --success-soft: rgba(92, 201, 140, .15);
-  --warning: #E3AC4A;  --warning-soft: rgba(227, 172, 74, .15);
-
-  --tok-time-fg: #6BD39A;        --tok-time-bg: rgba(92, 201, 140, .16);
-  --tok-clip-fg: #7FB2F5;        --tok-clip-bg: rgba(111, 168, 240, .16);
-  --tok-rand-fg: #C79BF7;        --tok-rand-bg: rgba(195, 150, 245, .16);
-  --tok-sys-fg: #62CCD8;         --tok-sys-bg: rgba(86, 199, 210, .16);
-  --tok-var-fg: #9BA7F8;         --tok-var-bg: rgba(130, 144, 245, .20);
-  --tok-unknown-fg: #F5837C;     --tok-unknown-bg: rgba(242, 115, 108, .15);
-  --tok-invalid-fg: #EBB95F;     --tok-invalid-bg: rgba(227, 172, 74, .15);
-  --tok-missing-fg: #7A7A84;     --tok-missing-bg: rgba(255, 255, 255, .05);
-
-  --shadow-frame: 0 24px 60px -18px rgba(0, 0, 0, .8), 0 2px 8px rgba(0, 0, 0, .5);
-  --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .08);
-  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .3);
-
-  --sheet-head-bg: rgba(14, 14, 17, .78);
-  --surface-translucent: rgba(30, 30, 34, .90);
-  --warning-border: rgba(227, 172, 74, .32);
+  --surface: #24272b; --surface-2: #202327; --surface-3: #2b2f34;
+  --surface-sunken: #1f2226; --titlebar: #202327;
+  --border: #363b42; --border-strong: #474e57; --border-faint: #30353b;
+  --text: #edf0f3; --text-2: #bec4cc; --text-3: #a7adb6; --text-inv: #2b1505;
+  --accent: #ffac63; --accent-strong: #ffc48f;
+  --action-bg: #ff8524; --action-hover: #ff9c4e;
+  --accent-soft: #472f21; --accent-soft-2: #68422b; --accent-border: #68422b;
+  --hover: #33383e; --selected: #533622;
+  --danger: #e8a0a0; --danger-soft: #422d2d;
+  --success: #88caa6; --success-soft: #293a33;
+  --warning: #e0b675; --warning-soft: #3b3327; --warning-border: #685537;
+  --tok-time-fg: #88caa6; --tok-time-bg: #293a33;
+  --tok-clip-fg: #98bade; --tok-clip-bg: #293544;
+  --tok-rand-fg: #bec4cc; --tok-rand-bg: #2b2f34;
+  --tok-sys-fg: #98bade; --tok-sys-bg: #293544;
+  --tok-var-fg: #ffac63; --tok-var-bg: #472f21;
+  --tok-unknown-fg: #e8a0a0; --tok-unknown-bg: #422d2d;
+  --tok-invalid-fg: #e8a0a0; --tok-invalid-bg: #422d2d;
+  --tok-missing-fg: #e0b675; --tok-missing-bg: #3b3327;
+  --group-1: #ffac63; --group-2: #98bade; --group-3: #88caa6;
+  --group-4: #e0b675; --group-5: #e8a0a0; --group-6: #7cc7ce; --group-7: #a7adb6;
+  --shadow-pop: 0 20px 56px #00000065, 0 3px 12px #00000033;
+  --shadow-inset: inset 0 1px 2px #00000020;
+  --action-shadow: 0 3px 12px #ff852428;
+  --focus-ring: 0 0 0 3px #ff852445; --overlay: #10121490;
 }
-
-/* ==========================================================================
-   主题跟随系统 —— 由设计稿工具栏把 data-theme 设为 auto 时生效
-   ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root[data-theme="auto"] {
-    color-scheme: dark;
-    --sheet-bg: #0E0E11;
-    --sheet-bg-grad: radial-gradient(1200px 600px at 20% -10%, #1A1A20 0%, #0C0C0F 60%);
-    --sheet-text: #E6E6EA;
-    --sheet-text-dim: #8B8B95;
-    --sheet-card: #17171B;
-    --surface: #1E1E22;
-    --surface-2: #19191D;
-    --surface-3: #141417;
-    --surface-sunken: #1A1A1E;
-    --titlebar: #232327;
-    --border: rgba(255, 255, 255, .085);
-    --border-strong: rgba(255, 255, 255, .17);
-    --border-faint: rgba(255, 255, 255, .05);
-    --text: #ECECEF;
-    --text-2: #A3A3AD;
-    --text-3: #6D6D77;
-    --text-inv: #14141A;
-    --accent: #8290F5;
-    --accent-strong: #9BA7F8;
-    --accent-soft: rgba(130, 144, 245, .16);
-    --accent-soft-2: rgba(130, 144, 245, .26);
-    --accent-border: rgba(130, 144, 245, .40);
-    --hover: rgba(255, 255, 255, .05);
-    --selected: rgba(130, 144, 245, .14);
-    --danger: #F2736C;   --danger-soft: rgba(242, 115, 108, .15);
-    --success: #5CC98C;  --success-soft: rgba(92, 201, 140, .15);
-    --warning: #E3AC4A;  --warning-soft: rgba(227, 172, 74, .15);
-    --tok-time-fg: #6BD39A;    --tok-time-bg: rgba(92, 201, 140, .16);
-    --tok-clip-fg: #7FB2F5;    --tok-clip-bg: rgba(111, 168, 240, .16);
-    --tok-rand-fg: #C79BF7;    --tok-rand-bg: rgba(195, 150, 245, .16);
-    --tok-sys-fg: #62CCD8;     --tok-sys-bg: rgba(86, 199, 210, .16);
-    --tok-var-fg: #9BA7F8;     --tok-var-bg: rgba(130, 144, 245, .20);
-    --tok-unknown-fg: #F5837C; --tok-unknown-bg: rgba(242, 115, 108, .15);
-    --tok-invalid-fg: #EBB95F; --tok-invalid-bg: rgba(227, 172, 74, .15);
-    --tok-missing-fg: #7A7A84; --tok-missing-bg: rgba(255, 255, 255, .05);
-    --shadow-frame: 0 24px 60px -18px rgba(0, 0, 0, .8), 0 2px 8px rgba(0, 0, 0, .5);
-    --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .08);
-    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .3);
-
-    --sheet-head-bg: rgba(14, 14, 17, .78);
-    --surface-translucent: rgba(30, 30, 34, .90);
-    --warning-border: rgba(227, 172, 74, .32);
-  }
-}
-
-/* ==========================================================================
-   第二套皮肤 · 荧光墨 Cyber Ink（设置「界面风格」切换）
-   近黑底 + 琥珀荧光、全界面等宽、硬直角、发丝边框，终端美学；
-   浅色为暖纸琥珀变体。与 data-theme（light/dark/auto）正交。
-   选择器特异性不低于上方原生主题块，故整段放在文件末尾
-   ========================================================================== */
-:root[data-style="cyberink"] {
-  --font-ui: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-  --r-xs: 2px; --r-sm: 2px; --r-md: 3px; --r-lg: 3px; --r-xl: 4px;
-}
-
-:root[data-style="cyberink"],
-:root[data-style="cyberink"][data-theme="light"] {
-  color-scheme: light;
-
-  --surface: #FAFAF7;
-  --surface-2: #F2F2ED;
-  --surface-3: #E7E7DF;
-  --surface-sunken: #F6F6F1;
-  --titlebar: #EFEFE9;
-
-  --border: rgba(20, 20, 18, .18);
-  --border-strong: rgba(20, 20, 18, .40);
-  --border-faint: rgba(20, 20, 18, .09);
-
-  --text: #111110;
-  --text-2: #4E4E48;
-  --text-3: #87877E;
-  --text-inv: #FAFAF7;
-
-  --accent: #A85A00;
-  --accent-strong: #8C4A00;
-  --accent-soft: rgba(168, 90, 0, .10);
-  --accent-soft-2: rgba(168, 90, 0, .18);
-  --accent-border: rgba(168, 90, 0, .34);
-
-  --hover: rgba(20, 20, 18, .05);
-  --selected: rgba(168, 90, 0, .10);
-
-  --danger: #B32B1C;   --danger-soft: rgba(179, 43, 28, .10);
-  --success: #14714A;  --success-soft: rgba(20, 113, 74, .10);
-  --warning: #8A5A00;  --warning-soft: rgba(138, 90, 0, .11);
-
-  --tok-time-fg: #14714A;        --tok-time-bg: rgba(20, 113, 74, .10);
-  --tok-clip-fg: #1B5E8C;        --tok-clip-bg: rgba(27, 94, 140, .10);
-  --tok-rand-fg: #7A2E63;        --tok-rand-bg: rgba(122, 46, 99, .10);
-  --tok-sys-fg: #14666B;         --tok-sys-bg: rgba(20, 102, 107, .10);
-  --tok-var-fg: #A85A00;         --tok-var-bg: rgba(168, 90, 0, .12);
-  --tok-unknown-fg: #A8281A;     --tok-unknown-bg: rgba(179, 43, 28, .10);
-  --tok-invalid-fg: #7C5200;     --tok-invalid-bg: rgba(138, 90, 0, .13);
-  --tok-missing-fg: #87877E;     --tok-missing-bg: rgba(20, 20, 18, .06);
-
-  --shadow-frame: 0 0 0 1px rgba(20, 20, 18, .28), 0 20px 44px -20px rgba(20, 20, 18, .4);
-  --shadow-pop: 0 0 0 1px rgba(20, 20, 18, .24), 0 12px 28px -12px rgba(20, 20, 18, .3);
-  --shadow-inset: inset 0 0 0 1px rgba(20, 20, 18, .06);
-
-  --surface-translucent: rgba(250, 250, 247, .95);
-  --warning-border: rgba(138, 90, 0, .28);
-
-  --btn-glow: 0 0 14px -6px rgba(168, 90, 0, .45);
-  --focus-ring: 0 0 0 2px rgba(168, 90, 0, .30);
-}
-
-:root[data-style="cyberink"][data-theme="dark"] {
   color-scheme: dark;
-
-  --surface: #0A0B0C;
-  --surface-2: #070809;
-  --surface-3: #15171A;
-  --surface-sunken: #0C0E10;
-  --titlebar: #101215;
-
-  --border: rgba(255, 176, 32, .14);
-  --border-strong: rgba(255, 176, 32, .30);
-  --border-faint: rgba(255, 255, 255, .06);
-
-  --text: #E9E6E1;
-  --text-2: #A6A29B;
-  --text-3: #6B6862;
-  --text-inv: #0A0B0C;
-
-  --accent: #FFB000;
-  --accent-strong: #FFC233;
-  --accent-soft: rgba(255, 176, 0, .13);
-  --accent-soft-2: rgba(255, 176, 0, .22);
-  --accent-border: rgba(255, 176, 0, .38);
-
-  --hover: rgba(255, 176, 0, .07);
-  --selected: rgba(255, 176, 0, .12);
-
-  --danger: #FF6B5A;   --danger-soft: rgba(255, 107, 90, .14);
-  --success: #4AF6A0;  --success-soft: rgba(74, 246, 160, .13);
-  --warning: #FFB000;  --warning-soft: rgba(255, 176, 0, .14);
-
-  --tok-time-fg: #4AF6A0;        --tok-time-bg: rgba(74, 246, 160, .12);
-  --tok-clip-fg: #58C7FF;        --tok-clip-bg: rgba(88, 199, 255, .12);
-  --tok-rand-fg: #FF8AC2;        --tok-rand-bg: rgba(255, 138, 194, .12);
-  --tok-sys-fg: #56E0D0;         --tok-sys-bg: rgba(86, 224, 208, .12);
-  --tok-var-fg: #FFB000;         --tok-var-bg: rgba(255, 176, 0, .15);
-  --tok-unknown-fg: #FF6B5A;     --tok-unknown-bg: rgba(255, 107, 90, .13);
-  --tok-invalid-fg: #FFD166;     --tok-invalid-bg: rgba(255, 209, 102, .13);
-  --tok-missing-fg: #6B6862;     --tok-missing-bg: rgba(255, 255, 255, .06);
-
-  --shadow-frame: 0 0 0 1px rgba(255, 176, 0, .22), 0 24px 60px -20px rgba(0, 0, 0, .95);
-  --shadow-pop: 0 0 0 1px rgba(255, 176, 0, .26), 0 14px 34px -12px rgba(0, 0, 0, .85);
-  --shadow-inset: inset 0 0 0 1px rgba(255, 176, 0, .07);
-
-  --surface-translucent: rgba(10, 11, 12, .94);
-  --warning-border: rgba(255, 176, 0, .34);
-
-  --btn-glow: 0 0 18px -4px rgba(255, 176, 0, .55);
-  --focus-ring: 0 0 0 2px rgba(255, 176, 0, .30);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-style="cyberink"][data-theme="auto"] {
-    color-scheme: dark;
-
-    --surface: #0A0B0C;
-    --surface-2: #070809;
-    --surface-3: #15171A;
-    --surface-sunken: #0C0E10;
-    --titlebar: #101215;
-
-    --border: rgba(255, 176, 32, .14);
-    --border-strong: rgba(255, 176, 32, .30);
-    --border-faint: rgba(255, 255, 255, .06);
-
-    --text: #E9E6E1;
-    --text-2: #A6A29B;
-    --text-3: #6B6862;
-    --text-inv: #0A0B0C;
-
-    --accent: #FFB000;
-    --accent-strong: #FFC233;
-    --accent-soft: rgba(255, 176, 0, .13);
-    --accent-soft-2: rgba(255, 176, 0, .22);
-    --accent-border: rgba(255, 176, 0, .38);
-
-    --hover: rgba(255, 176, 0, .07);
-    --selected: rgba(255, 176, 0, .12);
-
-    --danger: #FF6B5A;   --danger-soft: rgba(255, 107, 90, .14);
-    --success: #4AF6A0;  --success-soft: rgba(74, 246, 160, .13);
-    --warning: #FFB000;  --warning-soft: rgba(255, 176, 0, .14);
-
-    --tok-time-fg: #4AF6A0;    --tok-time-bg: rgba(74, 246, 160, .12);
-    --tok-clip-fg: #58C7FF;    --tok-clip-bg: rgba(88, 199, 255, .12);
-    --tok-rand-fg: #FF8AC2;    --tok-rand-bg: rgba(255, 138, 194, .12);
-    --tok-sys-fg: #56E0D0;     --tok-sys-bg: rgba(86, 224, 208, .12);
-    --tok-var-fg: #FFB000;     --tok-var-bg: rgba(255, 176, 0, .15);
-    --tok-unknown-fg: #FF6B5A; --tok-unknown-bg: rgba(255, 107, 90, .13);
-    --tok-invalid-fg: #FFD166; --tok-invalid-bg: rgba(255, 209, 102, .13);
-    --tok-missing-fg: #6B6862; --tok-missing-bg: rgba(255, 255, 255, .06);
-
-    --shadow-frame: 0 0 0 1px rgba(255, 176, 0, .22), 0 24px 60px -20px rgba(0, 0, 0, .95);
-    --shadow-pop: 0 0 0 1px rgba(255, 176, 0, .26), 0 14px 34px -12px rgba(0, 0, 0, .85);
-    --shadow-inset: inset 0 0 0 1px rgba(255, 176, 0, .07);
-
-    --surface-translucent: rgba(10, 11, 12, .94);
-    --warning-border: rgba(255, 176, 0, .34);
-
-    --btn-glow: 0 0 18px -4px rgba(255, 176, 0, .55);
-    --focus-ring: 0 0 0 2px rgba(255, 176, 0, .30);
+  --surface: #24272b; --surface-2: #202327; --surface-3: #2b2f34;
+  --surface-sunken: #1f2226; --titlebar: #202327;
+  --border: #363b42; --border-strong: #474e57; --border-faint: #30353b;
+  --text: #edf0f3; --text-2: #bec4cc; --text-3: #a7adb6; --text-inv: #2b1505;
+  --accent: #ffac63; --accent-strong: #ffc48f;
+  --action-bg: #ff8524; --action-hover: #ff9c4e;
+  --accent-soft: #472f21; --accent-soft-2: #68422b; --accent-border: #68422b;
+  --hover: #33383e; --selected: #533622;
+  --danger: #e8a0a0; --danger-soft: #422d2d;
+  --success: #88caa6; --success-soft: #293a33;
+  --warning: #e0b675; --warning-soft: #3b3327; --warning-border: #685537;
+  --tok-time-fg: #88caa6; --tok-time-bg: #293a33;
+  --tok-clip-fg: #98bade; --tok-clip-bg: #293544;
+  --tok-rand-fg: #bec4cc; --tok-rand-bg: #2b2f34;
+  --tok-sys-fg: #98bade; --tok-sys-bg: #293544;
+  --tok-var-fg: #ffac63; --tok-var-bg: #472f21;
+  --tok-unknown-fg: #e8a0a0; --tok-unknown-bg: #422d2d;
+  --tok-invalid-fg: #e8a0a0; --tok-invalid-bg: #422d2d;
+  --tok-missing-fg: #e0b675; --tok-missing-bg: #3b3327;
+  --group-1: #ffac63; --group-2: #98bade; --group-3: #88caa6;
+  --group-4: #e0b675; --group-5: #e8a0a0; --group-6: #7cc7ce; --group-7: #a7adb6;
+  --shadow-pop: 0 20px 56px #00000065, 0 3px 12px #00000033;
+  --shadow-inset: inset 0 1px 2px #00000020;
+  --action-shadow: 0 3px 12px #ff852428;
+  --focus-ring: 0 0 0 3px #ff852445; --overlay: #10121490;
   }
 }

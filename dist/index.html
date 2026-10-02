@@ -1,200 +1,91 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="auto" data-style="native">
+<html lang="zh-CN" data-theme="auto" data-style="orange" data-layout="quick">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Snippet Box</title>
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/dialog.css">
 </head>
 <body>
 <div class="viewport" id="app">
-
-  <!-- ============ S1 主列表 ============ -->
   <div class="view" id="viewList">
-    <div class="searchbar">
+    <header class="searchbar">
       <div class="search-field">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input id="searchInput" type="text" placeholder="搜索片段名称、内容或关键字..." autocomplete="off" spellcheck="false">
-        <button class="search-clear" id="searchClear" hidden title="清空搜索">
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        </button>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input id="searchInput" type="text" aria-label="搜索片段" placeholder="搜索片段、内容或关键字…" autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" hidden title="清空搜索" aria-label="清空搜索"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       </div>
-      <button class="btn btn--primary" id="btnNew">
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        新建
-      </button>
-      <button class="btn btn--icon btn--ghost" id="btnSettings" title="设置">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
-
+      <button class="btn btn--primary" id="btnNew" title="新建片段 ⌘N"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>新建</button>
+      <button class="btn btn--ghost btn-layout" id="btnLayout" title="切换管理视图" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M6 3v10" stroke="currentColor" stroke-width="1.3"/></svg><span>管理</span></button>
+      <button class="btn btn--icon btn--ghost" id="btnSettings" title="设置" aria-label="设置"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.6 3.1h4.8l.8 2.8 2.5 1.4 2.7-.7 2.4 4.2-2 2.1v2.8l2 2.1-2.4 4.2-2.7-.7-2.5 1.4-.8 2.8H9.6l-.8-2.8-2.5-1.4-2.7.7-2.4-4.2 2-2.1v-2.8l-2-2.1 2.4-4.2 2.7.7 2.5-1.4.8-2.8z" transform="translate(0 -2) scale(1 .91)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.6"/></svg></button>
+    </header>
+    <nav class="filter-bar" id="filterBar" aria-label="筛选片段"></nav>
     <div class="body-row" id="listBody">
-      <aside class="sidebar" id="sidebar"></aside>
-      <div class="list-pane">
+      <aside class="sidebar" id="sidebar" aria-label="片段分组"></aside>
+      <section class="list-pane" aria-label="片段库">
+        <div class="library-header"><div><h2 id="libraryTitle">全部片段</h2><span id="libraryCount"></span></div><select id="sortSelect" aria-label="片段排序"><option value="smart">智能排序</option><option value="recent">最近使用</option><option value="updated">最近修改</option><option value="name">名称排序</option></select></div>
         <div class="list" id="list" role="listbox" aria-label="片段列表" tabindex="0"></div>
-      </div>
+      </section>
+      <section class="detail-pane" id="detailPane" aria-label="片段详情"></section>
     </div>
-
     <div class="empty" id="emptyState" hidden>
-      <div class="empty-art">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 8l2.5-4h13L21 8v11a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8h5l1.2 2.2h5.6L16 8h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </div>
-      <h2 class="empty-title">还没有片段</h2>
-      <p class="empty-desc">片段是可以带占位符的文本模板。写下模板，占位符会在你浏览时就渲染成真实值：</p>
+      <div class="empty-art"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8l2.5-4h13L21 8v11a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8h5l1.2 2.2h5.6L16 8h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+      <h2 class="empty-title">把常用文本放在这里</h2>
+      <p class="empty-desc">保存回复、代码和模板。日期、剪贴板与变量会在输出前自动填入。</p>
       <div class="empty-demo" id="emptyDemo"></div>
-      <div class="empty-actions">
-        <button class="btn btn--primary" id="btnEmptyNew">
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          新建第一个片段
-        </button>
-        <button class="btn" id="btnEmptySeed">导入 4 条示例</button>
-      </div>
+      <div class="empty-actions"><button class="btn btn--primary" id="btnEmptyNew">新建第一个片段</button><button class="btn" id="btnEmptySeed">导入 4 条示例</button></div>
     </div>
-
-    <div class="statusbar">
+    <footer class="statusbar">
       <span class="ctx" id="ctxStat"></span>
-      <span class="hints">
-        <span class="hint"><span class="kbd">↑</span><span class="kbd">↓</span> 选择</span>
-        <span class="hint"><span class="kbd">↵</span> 粘贴</span>
-        <span class="hint"><span class="kbd">⌥</span><span class="kbd">↵</span> 仅复制</span>
-        <span class="hint hint--edit"><span class="kbd">⌘</span><span class="kbd">E</span> 编辑</span>
-        <span class="hint hint--esc"><span class="kbd">esc</span> 退后台</span>
-      </span>
-    </div>
+      <span class="hints"><span class="hint"><span class="kbd">↑↓</span> 选择</span><span class="hint"><span class="kbd">↵</span><span id="outputHint">粘贴</span></span><span class="hint hint--edit"><span class="kbd">⌘E</span> 编辑</span><span class="hint hint--esc"><span class="kbd">esc</span> 退出</span></span>
+    </footer>
   </div>
 
-  <!-- ============ S2 片段编辑器 ============ -->
   <div class="view" id="viewEditor" hidden>
-    <div class="ed-head">
-      <button class="btn btn--icon btn--ghost" id="edBack" title="返回列表">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <span class="ed-title" id="edTitle">编辑片段</span>
-      <span class="spacer"></span>
-      <button class="btn btn--danger" id="edDelete" hidden>删除</button>
-      <button class="btn btn--ghost" id="edCancel">取消</button>
-      <button class="btn btn--primary" id="edSave">保存 <span class="kbd">⌘</span><span class="kbd">↵</span></button>
-    </div>
+    <header class="ed-head">
+      <button class="btn btn--icon btn--ghost" id="edBack" title="返回列表" aria-label="返回列表"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="ed-title" id="edTitle">编辑片段</span><span class="ed-dirty" id="edDirty">未修改</span><span class="spacer"></span>
+      <button class="btn btn--danger btn--sm" id="edDelete" hidden>删除</button><button class="btn btn--ghost" id="edCancel">取消</button><button class="btn btn--primary" id="edSave">保存 <span class="kbd">⌘↵</span></button>
+    </header>
     <div class="ed-body">
-      <div class="ed-meta">
-        <div class="field">
-          <span class="field-label">名称</span>
-          <input class="input" id="edName" placeholder="例如：git commit 模板" autocomplete="off">
+      <div class="ed-form">
+        <div class="ed-meta">
+          <div class="field"><label class="field-label" for="edName">名称 <span class="required">*</span></label><input class="input" id="edName" maxlength="120" placeholder="例如：git commit 模板" autocomplete="off"></div>
+          <div class="field"><label class="field-label" for="edGroup">分组</label><select class="select" id="edGroup"></select></div>
+          <div class="field full"><label class="field-label" for="edSearchKey">搜索关键字 <span class="field-optional">可选</span></label><input class="input input--mono" id="edSearchKey" placeholder="用空格分隔，例如：commit 提交" autocomplete="off"></div>
         </div>
-        <div class="field">
-          <span class="field-label">分组</span>
-          <select class="select" id="edGroup"></select>
+        <div class="editor-template">
+          <div class="template-toolbar"><label class="field-label" for="edTpl">模板内容 <span class="required">*</span></label><button class="btn btn--sm btn--ghost" id="edPopBtn">{ } 占位符</button></div>
+          <div class="panel tpl-editor-panel"><div class="panel-body tpl-editor"><div class="tpl-lines" id="edLines" aria-hidden="true"></div><textarea class="textarea textarea--tpl" id="edTpl" spellcheck="false" placeholder="feat({{?scope}}): {{?改动}}"></textarea></div></div>
+          <div class="template-meta"><span>用 {{?变量名}} 在输出前填写</span><span id="edCount">0 字符</span></div><div class="pop" id="edPop" hidden></div>
         </div>
-        <div class="field">
-          <span class="field-label">搜索关键字</span>
-          <input class="input input--mono" id="edSearchKey" placeholder="仅插件内搜索用" autocomplete="off">
-        </div>
-        <div class="field">
-          <span class="field-label">直达关键字</span>
-          <input class="input input--mono" id="edDirectKey" placeholder="开启下方开关后生效" autocomplete="off" disabled>
-        </div>
+        <div class="ed-toggles"><span class="ed-toggle"><button class="checkbox" id="edPinned" role="checkbox" aria-label="置顶片段" aria-checked="false"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6.5L4.8 9 10 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>置顶片段</span></div>
+        <details class="advanced-options" id="edAdvanced"><summary>高级设置 · 直达关键字</summary><div class="ed-toggle"><span>从 uTools 直接调用此片段</span><span class="spacer"></span><button class="switch" id="edDirect" role="switch" aria-label="开启直达关键字" aria-checked="false"></button></div><div class="field"><label class="field-label" for="edDirectKey">直达关键字</label><input class="input input--mono" id="edDirectKey" placeholder="例如：commit" autocomplete="off" disabled><span class="field-hint">在 uTools 搜索中输入关键字，即可输出此片段。</span></div><span class="pill pill--var" id="edDegrade" hidden>含待填变量 · 调用时先填写</span></details>
+        <div class="ed-error" id="edError" role="alert" hidden></div>
       </div>
-
-      <div class="ed-toggles">
-        <label class="ed-toggle"><button class="checkbox" id="edPinned" role="checkbox" aria-checked="false">
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6.5L4.8 9 10 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>置顶</label>
-        <label class="ed-toggle"><button class="switch" id="edDirect" role="switch" aria-checked="false"></button>开启直达关键字</label>
-        <span class="spacer" style="flex:1"></span>
-        <span class="pill pill--var" id="edDegrade" hidden>含待填变量 · 直达时降级为显窗</span>
-      </div>
-
-      <div class="panel tpl-editor-panel" style="position:relative">
-        <div class="panel-head">
-          <span class="panel-name">模板</span>
-          <span class="spacer"></span>
-          <button class="btn btn--sm btn--ghost" id="edPopBtn">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M6 2L2 8l4 6M10 2l4 6-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            可用占位符
-          </button>
-        </div>
-        <div class="panel-body tpl-editor">
-          <div class="tpl-lines" id="edLines"></div>
-          <textarea class="textarea textarea--tpl" id="edTpl" spellcheck="false" placeholder="写下模板，例如：feat({{?scope}}): {{?改动}}"></textarea>
-        </div>
-        <div class="pop" id="edPop" hidden></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <span class="panel-name">实时预览</span>
-          <span style="font-size:10px;color:var(--text-3)">这就是回车后会输出的内容</span>
-          <span class="spacer"></span>
-          <button class="btn btn--sm btn--ghost" id="edRefreshCtx">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            刷新上下文
-          </button>
-        </div>
-        <div class="panel-body">
-          <div class="preview-body" id="edPreview"></div>
-          <div class="issue-bar" id="edIssues"></div>
-        </div>
-      </div>
+      <aside class="ed-preview">
+        <div class="preview-heading"><h2>实时预览</h2><button class="btn btn--sm btn--ghost" id="edRefreshCtx" title="刷新上下文快照"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>刷新</button></div>
+        <p class="preview-note">日期和剪贴板已填入，待填变量会在输出前询问。</p><div class="panel"><div class="preview-body" id="edPreview"></div></div><div class="issue-bar" id="edIssues"></div><p class="preview-note">刷新快照可以更新日期、剪贴板和随机值。</p>
+      </aside>
     </div>
   </div>
 
-  <!-- ============ S4 设置 ============ -->
   <div class="view" id="viewSettings" hidden>
-    <div class="ed-head">
-      <button class="btn btn--icon btn--ghost" id="setBack" title="返回">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <span class="ed-title">设置</span>
-      <span class="spacer"></span>
-      <button class="btn btn--ghost" id="setReset">
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 1.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        恢复默认
-      </button>
-    </div>
+    <header class="ed-head"><button class="btn btn--icon btn--ghost" id="setBack" title="返回列表" aria-label="返回列表"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="ed-title">设置</span><span class="spacer"></span><button class="btn btn--ghost" id="setReset">恢复默认</button></header>
     <div class="settings" id="settingsBody"></div>
   </div>
 
-  <div class="toast-zone" id="toastZone"></div>
-
-  <!-- ============ S3 变量填值弹框 ============ -->
+  <div class="toast-zone" id="toastZone" role="status" aria-live="polite"></div>
   <div class="scrim" id="varScrim" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="varTitle">
-      <div class="modal-head">
-        <h2 class="modal-title" id="varTitle">填写变量</h2>
-        <p class="modal-sub" id="varSub"></p>
-      </div>
-      <div class="modal-body">
-        <div id="varFields" style="display:flex;flex-direction:column;gap:var(--sp-2)"></div>
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-name">实时预览</span>
-            <span class="spacer"></span>
-            <span style="font-size:10px;color:var(--text-3)" id="varMissing"></span>
-          </div>
-          <div class="panel-body"><div class="preview-body" id="varPreview"></div></div>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <span style="font-size:10px;color:var(--text-3)"><span class="kbd">tab</span> 切换 · <span class="kbd">esc</span> 取消</span>
-        <span class="spacer"></span>
-        <button class="btn" id="varCopy">仅复制 <span class="kbd">⌥</span><span class="kbd">↵</span></button>
-        <button class="btn btn--primary" id="varPaste">粘贴
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="varTitle" aria-describedby="varSub">
+      <div class="modal-head"><h2 class="modal-title" id="varTitle">填写变量</h2><p class="modal-sub" id="varSub"></p><button class="btn btn--icon btn--ghost modal-close" id="varCancel" title="取消" aria-label="取消填写">×</button></div>
+      <div class="modal-body"><div id="varFields" class="var-fields"></div><div class="variable-preview"><div class="preview-heading"><span>输出预览</span><span id="varMissing"></span></div><div class="panel"><div class="preview-body" id="varPreview"></div></div></div></div>
+      <div class="modal-foot"><span class="modal-key-hint"><span class="kbd">tab</span> 切换 · <span class="kbd">esc</span> 取消</span><span class="spacer"></span><button class="btn" id="varCopy">仅复制</button><button class="btn btn--primary" id="varPaste">粘贴 <span class="kbd">↵</span></button></div>
     </div>
   </div>
-
 </div>
-
-<script>
-// 仅开发预览用：?shim=1 时在普通浏览器里装内存 shim（build.sh 不打进 dist）
-if (/shim=1/.test(location.search)) document.write('<script src="js/shim.js"><\/script>');
-</script>
-<script src="js/engine.js"></script>
-<script src="js/store.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
+<script src="js/engine.js"></script><script src="js/store.js"></script><script src="js/ui.js"></script><script src="js/dialog.js"></script><script src="js/app.js"></script>
 </body>
 </html>

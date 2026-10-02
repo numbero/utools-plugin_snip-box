@@ -20,11 +20,13 @@ window.SBUI = (function () {
     warn: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l6.5 11.5h-13L8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5v3M8 11.6v.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'
   };
 
-  var GROUP_COLORS = ['#8290F5', '#5CC98C', '#E3AC4A', '#7FB2F5', '#C79BF7', '#62CCD8', '#F5837C'];
+  var GROUP_COLORS = ['var(--group-1)', 'var(--group-2)', 'var(--group-3)', 'var(--group-4)', 'var(--group-5)', 'var(--group-6)', 'var(--group-7)'];
+  ICO.more = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="13" cy="8" r="1.2"/></svg>';
+  ICO.output = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function groupColor(gid, groups) {
     for (var i = 0; i < groups.length; i++) if (groups[i].id === gid) return GROUP_COLORS[i % GROUP_COLORS.length];
-    return '#7A7A84';
+    return 'var(--text-3)';
   }
   function groupName(gid, groups) {
     for (var i = 0; i < groups.length; i++) if (groups[i].id === gid) return groups[i].name;
@@ -35,6 +37,8 @@ window.SBUI = (function () {
   function relevance(s, q) {
     if (!q) return 0;
     var ql = q.toLowerCase();
+    if (s.name.toLowerCase().indexOf(ql) === 0) return 5;
+    if ((s.keyword || '').toLowerCase() === ql || (s.searchKey || '').toLowerCase().split(/\s+/).indexOf(ql) >= 0) return 4;
     if (s.name.toLowerCase().indexOf(ql) >= 0) return 3;
     if ((s.searchKey + ' ' + s.keyword).toLowerCase().indexOf(ql) >= 0) return 2;
     if (s.content.toLowerCase().indexOf(ql) >= 0) return 1;
@@ -52,7 +56,8 @@ window.SBUI = (function () {
 
   function searchSort(state) {
     var q = (state.query || '').trim();
-    var f = state.filter;
+    var f = state.filter || { type: 'all' };
+    var sort = state.sort || state.settings.sort || 'smart';
     var items = state.snippets.filter(function (s) {
       if (f.type === 'pinned') return s.pinned;
       if (f.type === 'recent') return s.lastUsedAt && (Date.now() - new Date(s.lastUsedAt).getTime()) < 30 * 86400000;
@@ -60,15 +65,19 @@ window.SBUI = (function () {
       if (f.type === 'ungrouped') return !s.group;
       return true;
     });
-    if (q) {
-      items = items.filter(function (s) { return relevance(s, q) > 0; });
-      items.sort(function (a, b) {
-        var d = relevance(b, q) - relevance(a, q);
-        return d !== 0 ? d : smartScore(b) - smartScore(a);
-      });
-    } else {
-      items.sort(function (a, b) { return smartScore(b) - smartScore(a); });
-    }
+    if (q) items = items.filter(function (s) { return relevance(s, q) > 0; });
+    items.sort(function (a, b) {
+      if (q) {
+        var score = relevance(b, q) - relevance(a, q);
+        if (score) return score;
+      }
+      var pinned = Number(!!b.pinned) - Number(!!a.pinned);
+      if (pinned) return pinned;
+      if (sort === 'name') return a.name.localeCompare(b.name, 'zh-CN');
+      if (sort === 'recent') return new Date(b.lastUsedAt || 0).getTime() - new Date(a.lastUsedAt || 0).getTime();
+      if (sort === 'updated') return new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime();
+      return smartScore(b) - smartScore(a);
+    });
     return items;
   }
 
@@ -88,36 +97,86 @@ window.SBUI = (function () {
     return state.settings.colorTokens ? r.html : esc(r.text);
   }
 
-  /* ---------- 侧栏 ---------- */
+  /* 同一上下文快照下，预览、变量表单与实际输出共享已解析的片段。
+     values 只替换待填变量，因此输入变量不会重新生成 UUID / 随机值。 */
+  function renderSnippet(state, snippet, values) {
+    var content = String(snippet.content || '');
+    var key = 'snippet:' + String(snippet.id || '__editor');
+    var ctx = state.ctx || {};
+    var delimiter = state.settings.delimiter || 'mustache';
+    if (!state.renderCache) state.renderCache = Object.create(null);
+    var entry = state.renderCache[key];
+    if (!entry || entry.content !== content || entry.ctx !== ctx || entry.now !== ctx.now || entry.delimiter !== delimiter) {
+      var parseCtx = {};
+      Object.keys(ctx).forEach(function (name) { if (name !== 'variables') parseCtx[name] = ctx[name]; });
+      parseCtx.variables = Object.create(null);
+      var parsed;
+      try { parsed = E.parse(content, { context: parseCtx, delimiter: delimiter }); }
+      catch (error) { return { text: content, html: esc(content), variables: [], issues: [], fatal: true, truncated: false }; }
+      entry = { content: content, ctx: ctx, now: ctx.now, delimiter: delimiter, parsed: parsed };
+      state.renderCache[key] = entry;
+    }
+    var text = '';
+    var html = '';
+    entry.parsed.segments.forEach(function (seg) {
+      if (seg.type === 'text') { text += seg.value; html += esc(seg.value); return; }
+      if (seg.category === 'variable' && (seg.state === 'variable' || seg.state === 'ok')) {
+        var filled = values && Object.prototype.hasOwnProperty.call(values, seg.name);
+        var val = filled ? String(values[seg.name]) : '';
+        text += val;
+        html += filled ? '<span class="tok tok--variable" title="' + esc(seg.raw) + '">' + esc(val) + '</span>' :
+          '<span class="tok tok--variable tok--pending" title="输出前填写变量">' + esc(seg.raw) + '</span>';
+        return;
+      }
+      if (seg.state === 'ok') {
+        text += String(seg.value);
+        html += '<span class="tok tok--' + seg.category + '" title="' + esc(seg.raw + (seg.volatile ? ' · 刷新快照可生成新值' : '')) + '">' + esc(seg.value) + '</span>';
+      } else if (seg.state === 'missing') {
+        html += '<span class="tok tok--missing" title="' + esc(seg.note || '上下文缺失，输出为空') + '">[上下文为空]</span>';
+      } else {
+        text += seg.raw;
+        html += '<span class="tok tok--' + seg.state + '" title="' + esc(seg.note || '') + '">' + esc(seg.raw) + '</span>';
+      }
+    });
+    return { text: text, html: html, variables: entry.parsed.variables, issues: entry.parsed.issues, fatal: false, truncated: false };
+  }
+
+  /* ---------- 侧栏与快速筛选 ---------- */
   function renderSidebar(state) {
     var counts = { all: state.snippets.length, pinned: 0, recent: 0, ungrouped: 0 };
-    var perGroup = {};
+    var perGroup = Object.create(null);
     state.snippets.forEach(function (s) {
       if (s.pinned) counts.pinned++;
       if (s.lastUsedAt && (Date.now() - new Date(s.lastUsedAt).getTime()) < 30 * 86400000) counts.recent++;
       if (!s.group) counts.ungrouped++;
       perGroup[s.group] = (perGroup[s.group] || 0) + 1;
     });
-    var f = state.filter;
-    function item(type, id, ico, name, count) {
+    var f = state.filter || { type: 'all' };
+    function item(type, id, ico, name, count, chip) {
       var cur = f.type === type && (f.id || '') === (id || '');
-      return '<button class="side-item" data-filter="' + type + '" data-id="' + esc(id || '') + '" aria-current="' + cur + '">' +
-        '<span class="ico">' + ico + '</span><span class="nm">' + esc(name) + '</span><span class="ct">' + count + '</span></button>';
+      return '<button class="' + (chip ? 'filter-chip' : 'side-item') + '" data-filter="' + type + '" data-id="' + esc(id || '') + '" aria-current="' + cur + '">' +
+        (chip ? '' : '<span class="ico">' + ico + '</span>') + '<span class="nm">' + esc(name) + '</span><span class="ct">' + count + '</span></button>';
     }
-    var html = '';
-    html += item('all', '', ICO.all, '全部', counts.all);
-    html += item('pinned', '', ICO.pin, '置顶', counts.pinned);
-    html += item('recent', '', ICO.recent, '最近使用', counts.recent);
+    var html = '<div class="side-sec">片段库</div>';
+    var chips = '';
+    [['all', ICO.all, '全部'], ['pinned', ICO.pin, '置顶'], ['recent', ICO.recent, '最近使用']].forEach(function (v) {
+      html += item(v[0], '', v[1], v[2], counts[v[0]], false);
+      chips += item(v[0], '', '', v[2], counts[v[0]], true);
+    });
     html += '<div class="side-sep"></div><div class="side-sec">分组</div>';
     state.groups.forEach(function (g) {
-      var cur = f.type === 'group' && f.id === g.id;
-      html += '<button class="side-item" data-filter="group" data-id="' + esc(g.id) + '" aria-current="' + cur + '">' +
-        '<span class="side-dot" style="background:' + groupColor(g.id, state.groups) + '"></span>' +
-        '<span class="nm">' + esc(g.name) + '</span><span class="ct">' + (perGroup[g.id] || 0) + '</span></button>';
+      var dot = '<span class="side-dot" style="background:' + groupColor(g.id, state.groups) + '"></span>';
+      html += '<div class="side-group-row">' + item('group', g.id, dot, g.name, perGroup[g.id] || 0, false) +
+        '<button class="group-menu" data-group-act="menu" data-id="' + esc(g.id) + '" aria-label="管理分组 ' + esc(g.name) + '" title="管理分组">' + ICO.more + '</button></div>';
+      chips += item('group', g.id, '', g.name, perGroup[g.id] || 0, true);
     });
-    html += item('ungrouped', '', ICO.ungrouped, '未分组', counts.ungrouped);
+    html += item('ungrouped', '', ICO.ungrouped, '未分组', counts.ungrouped, false);
+    chips += item('ungrouped', '', '', '未分组', counts.ungrouped, true);
     html += '<button class="side-item side-add" data-filter="__addgroup">+ 新建分组</button>';
+    chips += '<button class="filter-chip" data-filter="__managegroups">管理分组</button>';
+    chips += '<button class="filter-chip" data-filter="__addgroup" title="新建分组" aria-label="新建分组">+</button>';
     el('sidebar').innerHTML = html;
+    el('filterBar').innerHTML = chips;
   }
 
   /* ---------- 列表 ---------- */
@@ -133,87 +192,107 @@ window.SBUI = (function () {
     return html;
   }
 
+  function rowId(id) { return 'snippet-' + encodeURIComponent(String(id)).replace(/%/g, '_'); }
+  function filterTitle(state) {
+    var f = state.filter || { type: 'all' };
+    if (f.type === 'group') return groupName(f.id, state.groups);
+    return { all: '全部片段', pinned: '置顶片段', recent: '最近使用', ungrouped: '未分组' }[f.type] || '全部片段';
+  }
   function renderList(state) {
+    var list = el('list');
+    var focused = document.activeElement;
+    var keepFocus = focused && list.contains(focused);
+    var focusedAction = keepFocus && focused.getAttribute('data-act');
+    var focusedRow = keepFocus && focused.closest('.list-item');
+    var focusedId = focusedRow && focusedRow.getAttribute('data-id');
     var items = searchSort(state);
-    var activeOk = false;
-    for (var j = 0; j < items.length; j++) if (items[j].id === state.activeId) activeOk = true;
-    if (!activeOk) state.activeId = (items[0] || {}).id || null;
+    if (!items.some(function (s) { return s.id === state.activeId; })) state.activeId = (items[0] || {}).id || null;
     var q = (state.query || '').trim();
-    var opts = renderOpts(state);
     var html = '';
-    for (var i = 0; i < items.length; i++) {
-      var s = items[i];
+    items.forEach(function (s) {
       var active = s.id === state.activeId;
-      opts.maxLines = active ? 0 : (state.settings.showPreviewInList ? 1 : 0);
-      var r = E.render(s.content, opts);
+      var r = renderSnippet(state, s);
       var hasIssue = r.issues.some(function (x) { return x.level === 'unknown' || x.level === 'invalid'; });
-
-      html += '<div class="list-item" role="option" data-id="' + s.id + '" aria-selected="' + active + '">';
-      html += '<div class="li-top">';
-      html += '<span class="li-name">' + markHit(s.name, q) + '</span>';
-      html += '<span class="li-badges">';
-      if (s.pinned) html += '<span class="pill pill--pin">' + ICO.pin + '置顶</span>';
-      if (s.direct && s.keyword) html += '<span class="pill pill--key">' + ICO.bolt + esc(s.keyword) + '</span>';
-      else if (s.searchKey) html += '<span class="pill pill--grp">' + esc(s.searchKey.split(/\s+/)[0]) + '</span>';
-      if (r.variables.length) html += '<span class="pill pill--var" title="' + r.variables.length + ' 个待填变量">? ×' + r.variables.length + '</span>';
-      if (hasIssue) html += '<span class="pill pill--warn" title="含未知或非法占位符">!</span>';
-      html += '</span></div>';
-
-      if (state.settings.showPreviewInList && !active) {
-        html += '<div class="li-preview">' + previewHtml(r, state) + '</div>';
-      }
-
+      html += '<div class="list-item' + (!state.settings.showPreviewInList ? ' list-item--compact' : '') + '" id="' + rowId(s.id) + '" role="option" tabindex="' + (active ? '0' : '-1') + '" data-id="' + esc(s.id) + '" aria-selected="' + active + '">';
+      html += '<div class="li-top"><span class="li-glyph" aria-hidden="true">{ }</span><span class="li-name">' + markHit(s.name, q) + '</span><button class="icon-btn row-copy" data-act="copy" title="复制片段" aria-label="复制 ' + esc(s.name) + '">' + ICO.copy + '</button></div>';
+      if (state.settings.showPreviewInList) html += '<div class="li-preview">' + (state.settings.colorTokens ? r.html : esc(r.text || s.content)) + '</div>';
       html += '<div class="li-meta">';
-      if (s.group) html += '<span><span class="side-dot" style="display:inline-block;background:' + groupColor(s.group, state.groups) + ';vertical-align:0"></span> ' + esc(groupName(s.group, state.groups)) + '</span>';
-      if (s.useCount) html += '<span>×' + s.useCount + (s.lastUsedAt ? ' · ' + esc(s.lastUsedAt.slice(5, 16).replace('T', ' ')) : '') + '</span>';
-      html += '</div>';
-
-      html += '<span class="li-actions">' +
-        '<button class="icon-btn" data-act="copy" title="仅复制">' + ICO.copy + '</button>' +
-        '<button class="icon-btn' + (s.pinned ? ' on' : '') + '" data-act="pin" title="' + (s.pinned ? '取消置顶' : '置顶') + '">' + ICO.pin + '</button>' +
-        '<button class="icon-btn" data-act="edit" title="编辑 ⌘E">' + ICO.edit + '</button>' +
-        '</span>';
-
-      if (active) {
-        html += '<div class="render-block">' +
-          '<div class="render-label"><span class="live"></span>渲染结果 · 实时</div>' +
-          '<div class="render-out">' + previewHtml(r, state) + '</div>' +
-          '<div class="render-foot">' + issuePills(r) +
-          '<span class="render-hint">' + r.text.length + ' 字符' +
-          (r.variables.length ? ' · 回车先弹填值表单' : ' · 回车直接输出') +
-          '</span></div></div>';
-      }
-      html += '</div>';
-    }
+      if (s.group) html += '<span class="pill pill--grp" title="' + esc(groupName(s.group, state.groups)) + '">' + esc(groupName(s.group, state.groups)) + '</span>';
+      if (s.pinned) html += '<span class="pin-mark" title="已置顶">' + ICO.pin + '</span>';
+      if (r.variables.length) html += '<span class="pill pill--var" title="' + r.variables.length + ' 个待填变量">' + r.variables.length + ' 变量</span>';
+      else if (s.direct && s.keyword) html += '<span class="pill pill--key" title="直达关键字">' + ICO.bolt + esc(s.keyword) + '</span>';
+      if (hasIssue) html += '<span class="pill pill--warn" title="含未知或非法占位符">!</span>';
+      if (s.useCount) html += '<span class="use-count">使用 ' + s.useCount + ' 次</span>';
+      html += '</div></div>';
+    });
     if (!items.length) {
-      html = '<div class="empty" style="padding:var(--sp-6)"><p class="empty-desc">' +
-        (q ? '没有匹配「' + esc(q) + '」的片段' : '这个视图下还没有片段') + '</p></div>';
+      html = '<div class="empty list-empty"><h3>' + (q ? '没有匹配的片段' : '这里还没有片段') + '</h3><p>' + (q ? '试试其他关键字，或查看全部分组。' : '新建一个片段，或查看其他分组。') + '</p><div class="empty-actions">' +
+        (q ? '<button class="btn btn--sm" data-list-act="clear">清除搜索</button>' : '') + '<button class="btn btn--sm" data-list-act="all">全部分组</button><button class="btn btn--sm btn--primary" data-list-act="new">新建片段</button></div></div>';
     }
-    el('list').innerHTML = html;
+    list.innerHTML = html;
+    if (state.activeId) list.setAttribute('aria-activedescendant', rowId(state.activeId));
+    else list.removeAttribute('aria-activedescendant');
+    el('libraryTitle').textContent = q ? '搜索结果' : filterTitle(state);
+    el('libraryCount').textContent = items.length;
+    el('sortSelect').value = state.sort || state.settings.sort || 'smart';
+    if (keepFocus) {
+      var node = focusedId && el(rowId(focusedId));
+      var target = node && focusedAction ? node.querySelector('[data-act="' + focusedAction + '"]') : null;
+      if (!target) target = focusedRow ? el(rowId(state.activeId)) : list;
+      if (target) target.focus({ preventScroll: true });
+    }
+    renderDetail(state);
+  }
+
+  function renderDetail(state) {
+    var pane = el('detailPane');
+    var focused = document.activeElement;
+    var keepFocus = pane.contains(focused);
+    var action = keepFocus && focused.getAttribute('data-detail-act');
+    var tabFocus = keepFocus && focused.getAttribute('data-detail-tab');
+    var s = null;
+    state.snippets.some(function (item) { if (item.id === state.activeId) { s = item; return true; } return false; });
+    if (!s) {
+      pane.innerHTML = '<div class="empty detail-empty"><div class="empty-art">{ }</div><h2 class="empty-title">选择一个片段</h2><p class="empty-desc">预览输出内容，再复制或粘贴到原应用。</p></div>';
+      return;
+    }
+    var r = renderSnippet(state, s);
+    var tab = state.detailTab || 'preview';
+    var copy = state.settings.output === 'copy';
+    var label = copy ? '复制内容' : '粘贴到原应用';
+    if (r.variables.length) label = copy ? '填写并复制' : '填写并粘贴';
+    var html = '<header class="detail-head"><div class="detail-eyebrow">' + esc(groupName(s.group, state.groups)) + ' · ' + (s.pinned ? '已置顶' : '文本片段') + '</div><div class="detail-title"><h2>' + esc(s.name) + '</h2><div class="detail-actions">' +
+      '<button class="icon-btn' + (s.pinned ? ' on' : '') + '" data-detail-act="pin" title="' + (s.pinned ? '取消置顶' : '置顶') + '" aria-label="' + (s.pinned ? '取消置顶' : '置顶') + '">' + ICO.pin + '</button><button class="icon-btn" data-detail-act="edit" title="编辑片段 ⌘E" aria-label="编辑片段">' + ICO.edit + '</button><button class="icon-btn" data-detail-act="more" title="更多操作" aria-label="更多操作">' + ICO.more + '</button></div></div></header>';
+    html += '<div class="detail-tabs" role="tablist" aria-label="片段内容"><button id="detailPreviewTab" role="tab" data-detail-tab="preview" aria-selected="' + (tab === 'preview') + '" aria-controls="detailContent">输出预览</button><button id="detailTemplateTab" role="tab" data-detail-tab="template" aria-selected="' + (tab === 'template') + '" aria-controls="detailContent">原始模板</button></div>';
+    html += '<div class="detail-content" id="detailContent" role="tabpanel" aria-labelledby="' + (tab === 'template' ? 'detailTemplateTab' : 'detailPreviewTab') + '"><div class="preview-heading"><span>' + (tab === 'template' ? '保存的模板' : '<span class="live-dot"></span>已渲染 · 快照') + '</span><span>' + r.text.length + ' 字符</span></div>';
+    html += tab === 'template' ? '<pre class="template-text">' + esc(s.content) + '</pre>' : '<div class="render-out">' + previewHtml(r, state) + '</div>';
+    html += '<div class="detail-issues">' + issuePills(r) + '</div></div>';
+    html += '<div class="detail-info"><div class="meta-line"><span>分组</span><span class="pill pill--grp">' + esc(groupName(s.group, state.groups)) + '</span></div>';
+    if (s.searchKey) html += '<div class="meta-line"><span>关键字</span><span title="' + esc(s.searchKey) + '">' + esc(s.searchKey) + '</span></div>';
+    if (s.direct && s.keyword) html += '<div class="meta-line"><span>直达</span><span class="pill pill--key">' + esc((state.settings.directPrefix || '') + s.keyword) + '</span></div>';
+    html += '<div class="meta-line"><span>使用</span><span>' + (s.useCount || 0) + ' 次' + (s.lastUsedAt ? ' · 最近 ' + esc(E._internals.formatDate(new Date(s.lastUsedAt), 'MM-DD HH:mm')) : '') + '</span></div></div>';
+    html += '<footer class="detail-foot"><p class="output-note">' + (r.variables.length ? r.variables.length + ' 个变量待填 · 输出前会打开填写窗口' : copy ? '复制到剪贴板，随时粘贴到需要的地方' : '输出到打开插件之前使用的应用') + '</p><div class="output-actions"><button class="btn" data-detail-act="copy">' + ICO.copy + '仅复制</button><button class="btn btn--primary" data-detail-act="output">' + label + '<span class="kbd">↵</span>' + ICO.output + '</button></div></footer>';
+    pane.innerHTML = html;
+    if (keepFocus) {
+      var selector = action ? '[data-detail-act="' + action + '"]' : tabFocus ? '[data-detail-tab="' + tabFocus + '"]' : '';
+      var next = selector && pane.querySelector(selector);
+      if (next) next.focus({ preventScroll: true });
+    }
+    if (el('outputHint')) el('outputHint').textContent = copy ? '复制' : '粘贴';
   }
 
   /* ---------- 状态栏 ---------- */
   function renderCtxStat(state) {
-    var t = el('ctxStat');
     var ctx = state.ctx || {};
-    var clip = ctx.clipboard ? ctx.clipboard.replace(/\n/g, ' ') : '';
-    if (clip.length > 18) clip = clip.slice(0, 18) + '…';
-    var bits = [];
-    bits.push('<span title="剪贴板快照">' + ICO.clip + ' <b>' + (clip ? esc(clip) : '空') + '</b></span>');
-    if (ctx.url && ctx.url.url) {
-      var u = ctx.url.url.length > 22 ? ctx.url.url.slice(0, 22) + '…' : ctx.url.url;
-      bits.push('<span title="' + esc(ctx.url.url) + '">' + ICO.link + ' <b>' + esc(u) + '</b></span>');
-    } else {
-      bits.push('<span style="opacity:.55" title="唤起时焦点不在浏览器">' + ICO.link + ' <b>无</b></span>');
-    }
-    bits.push('<button class="btn btn--sm btn--ghost" id="ctxRefresh" style="height:18px;padding:0 5px">' + ICO.refresh + ' 刷新快照</button>');
-    t.innerHTML = bits.join('<span style="opacity:.3">·</span>');
+    var clip = (ctx.clipboard || '').replace(/\n/g, ' ');
+    var short = clip.length > 18 ? clip.slice(0, 18) + '…' : clip;
+    el('ctxStat').innerHTML = '<span class="ctx-snapshot" title="剪贴板快照：' + esc(clip || '空') + '">' + ICO.clip + ' <b>' + esc(short || '剪贴板为空') + '</b></span><button class="btn btn--sm btn--ghost" id="ctxRefresh" title="刷新上下文快照" aria-label="刷新上下文快照">' + ICO.refresh + '</button>';
   }
 
   /* ---------- 空状态 ---------- */
   function renderEmptyDemo(state) {
     var tpl = '{{date:MM月DD日}} {{time}} · {{user}} 提交了 {{random:100-999}} 行改动';
-    var r = E.render(tpl, renderOpts(state));
+    var r = renderSnippet(state, { id: '__empty', content: tpl });
     el('emptyDemo').innerHTML =
       '<div style="color:var(--text-3)">模板&nbsp;&nbsp;' + esc(tpl) + '</div>' +
       '<div style="margin-top:4px">结果&nbsp;&nbsp;' + (state.settings.colorTokens ? r.html : esc(r.text)) + '</div>';
@@ -246,6 +325,12 @@ window.SBUI = (function () {
     el('edPinned').setAttribute('aria-checked', String(!!d.pinned));
     el('edDirect').setAttribute('aria-checked', String(!!d.direct));
     el('edTpl').value = d.content || '';
+    el('edDirty').textContent = '未修改';
+    el('edError').hidden = true;
+    el('edError').textContent = '';
+    el('edAdvanced').open = !!d.direct;
+    ['edName', 'edTpl', 'edDirectKey'].forEach(function (id) { el(id).classList.remove('is-error'); el(id).removeAttribute('aria-invalid'); });
+    el('edPop').hidden = true;
     renderEditorPreview(state);
   }
 
@@ -259,7 +344,8 @@ window.SBUI = (function () {
   function renderEditorPreview(state) {
     var tpl = el('edTpl').value;
     renderLineNumbers();
-    var r = E.render(tpl, renderOpts(state));
+    var r = renderSnippet(state, { id: '__editor', content: tpl });
+    el('edCount').textContent = tpl.length + ' 字符';
     var pv = el('edPreview');
     if (!tpl) {
       pv.innerHTML = '<span class="preview-empty">写下模板，占位符会在这里实时渲染…</span>';
@@ -295,26 +381,23 @@ window.SBUI = (function () {
     var m = state.modal;
     var html = '';
     m.fields.forEach(function (f, i) {
-      var val = m.values[f.name] || '';
-      html += '<div class="var-field"><label for="varinp-' + i + '" title="' + esc(f.name) + '">' + esc(f.name) + '</label>' +
-        '<input class="input input--mono' + (val ? '' : ' is-empty') + '" id="varinp-' + i + '" name="var-' + esc(f.name) + '" data-var="' + esc(f.name) + '" value="' + esc(val) + '" placeholder="' + esc(f.defaultValue || '未填则输出空') + '"' + (i === 0 ? ' autofocus' : '') + '></div>';
+      var val = Object.prototype.hasOwnProperty.call(m.values, f.name) ? String(m.values[f.name]) : '';
+      html += '<div class="var-field"><label for="varinp-' + i + '">' + esc(f.name) + '</label><input class="input input--mono' + (val ? '' : ' is-empty') + '" id="varinp-' + i + '" data-var="' + esc(f.name) + '" value="' + esc(val) + '" placeholder="' + esc(f.defaultValue || '可留空') + '" autocomplete="off"></div>';
     });
     el('varFields').innerHTML = html;
-    el('varTitle').textContent = m.snippet.name;
-    el('varSub').textContent = '这个片段有 ' + m.fields.length + ' 个待填变量 · 填完按 ⌥↵ 复制 / ↵ 粘贴';
+    el('varTitle').textContent = '填写变量 · ' + m.snippet.name;
+    var copy = m.mode === 'copy';
+    el('varSub').textContent = m.fields.length + ' 个变量 · 填写后按回车' + (copy ? '复制' : '粘贴') + '，留空的变量不会输出内容。';
+    el('varPaste').innerHTML = (copy ? '复制' : '粘贴') + ' <span class="kbd">↵</span>';
+    el('varCopy').textContent = copy ? '改为粘贴' : '仅复制';
   }
 
   function renderVarPreview(state) {
     var m = state.modal;
-    var ctx = {
-      now: state.ctx.now, clipboard: state.ctx.clipboard, folder: state.ctx.folder,
-      url: state.ctx.url, sys: state.ctx.sys,
-      variables: m.values
-    };
-    var r = E.render(m.snippet.content, { context: ctx, delimiter: state.settings.delimiter });
-    el('varPreview').innerHTML = state.settings.colorTokens ? r.html : esc(r.text);
-    var missing = m.fields.filter(function (f) { return !m.values[f.name]; }).length;
-    el('varMissing').textContent = missing ? missing + ' 项未填 · 将输出为空' : '';
+    var r = renderSnippet(state, m.snippet, m.values);
+    el('varPreview').innerHTML = previewHtml(r, state);
+    var missing = m.fields.filter(function (f) { return !Object.prototype.hasOwnProperty.call(m.values, f.name) || !m.values[f.name]; }).length;
+    el('varMissing').textContent = missing ? missing + ' 项留空' : '变量已填入';
     return r;
   }
 
@@ -346,18 +429,18 @@ window.SBUI = (function () {
     html += '<div class="set-sec"><h3 class="set-sec-title">输出</h3>';
     html += row('默认输出方式', '回车时是把内容粘进上一个应用，还是只复制到剪贴板',
       selectHtml('output', s.output, [['paste', '自动粘贴到上一个应用'], ['copy', '仅复制到剪贴板']]));
-    html += row('粘贴模式', '合成粘贴走 <code>hideMainWindowPasteText</code>；虚拟机窗口、安全输入框拒绝合成粘贴时改逐字输入 <code>hideMainWindowTypeString</code>',
-      selectHtml('pasteMode', s.pasteMode, [['pasteText', '剪贴板粘贴 · pasteText'], ['typeString', '逐字输入 · typeString']]));
+    html += row('粘贴模式', '通常使用剪贴板粘贴；若目标应用不支持，可尝试逐字输入',
+      selectHtml('pasteMode', s.pasteMode, [['pasteText', '剪贴板粘贴'], ['typeString', '逐字输入']]));
     html += row('修饰键临时反向', '<span class="kbd">⌥</span><span class="kbd">↵</span> 执行与上面相反的动作', switchHtml('invertModifier', s.invertModifier));
     html += row('直达关键字统一前缀', '避免片段关键字污染 uTools 全局指令空间，如设为 <code>;</code> 则 <code>sign</code> 注册为 <code>;sign</code>',
       '<input class="input input--mono" style="width:74px" placeholder="关闭" name="directPrefix" value="' + esc(s.directPrefix) + '" data-input="directPrefix">');
     html += '</div>';
 
     html += '<div class="set-sec"><h3 class="set-sec-title">外观</h3>';
-    html += row('主题', '跟随系统时会在 macOS 切换深浅色的瞬间同步',
+    html += row('主题', '跟随系统自动切换浅色与深色，使用活力橙配色',
       segHtml('theme', s.theme, [['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']]));
-    html += row('界面风格', '荧光墨是近黑底 + 琥珀荧光的全等宽终端美学；切换即时生效，浅/深各自适配',
-      segHtml('style', s.style, [['native', '靛蓝原生'], ['cyberink', '荧光墨']]));
+    html += row('默认布局', '快速调用使用双栏；管理视图会显示分组侧栏',
+      segHtml('layout', s.layout || 'quick', [['quick', '快速调用'], ['manage', '管理视图']]));
     html += row('列表项显示渲染预览', '关闭后列表更紧凑，但看不到占位符的实际输出', switchHtml('showPreviewInList', s.showPreviewInList));
     html += row('预览中给占位符着色', '按来源分类上色，仅影响预览，不影响输出内容', switchHtml('colorTokens', s.colorTokens));
     html += '</div>';
@@ -369,8 +452,8 @@ window.SBUI = (function () {
 
     html += '<div class="set-sec"><h3 class="set-sec-title">数据</h3>';
     html += '<div class="callout callout--warn" style="margin-bottom:var(--sp-3)">' + ICO.warn +
-      '<span>片段存于 uTools 数据库，<b>可能随 uTools 云同步</b>。不要把密码、密钥写进片段；敏感内容请用其他工具保管。（PRD 风险 R4）</span></div>';
-    html += row('导出 / 导入', '导出为 JSON 文件备份；导入按片段 id 合并（同 id 覆盖）',
+      '<span>片段保存在 uTools 数据库中，可能随 uTools 云同步。密码和密钥请使用专门的管理工具保存。</span></div>';
+    html += row('导出 / 导入', '导出 JSON 备份；相同记录跳过，同 ID 内容冲突时创建副本',
       '<button class="btn btn--sm" id="btnExport">导出</button><button class="btn btn--sm" id="btnImport">导入</button>');
     html += row('清空示例数据', '删除首次启动时导入的 4 条示例片段（自己建的片段不受影响）',
       '<button class="btn btn--sm btn--danger" id="btnClearSeed">清空示例</button>');
@@ -383,7 +466,7 @@ window.SBUI = (function () {
       '<div class="about-cell"><div class="about-k">Chromium</div><div class="about-v">' + esc(about.chrome || '-') + '</div></div>' +
       '<div class="about-cell"><div class="about-k">Node</div><div class="about-v">' + esc(about.node || '-') + '</div></div>' +
       '</div>';
-    html += '<div class="set-row"><div class="set-main"><div class="set-name">复制诊断信息</div><div class="set-desc">反馈问题时把它粘给我，一次说清环境</div></div><div class="set-ctl"><button class="btn btn--sm" id="btnDiag">复制</button></div></div>';
+    html += '<div class="set-row"><div class="set-main"><div class="set-name">复制诊断信息</div><div class="set-desc">包含版本、设置与数据数量，方便排查问题</div></div><div class="set-ctl"><button class="btn btn--sm" id="btnDiag">复制</button></div></div>';
     html += '</div>';
 
     el('settingsBody').innerHTML = html;
@@ -405,6 +488,9 @@ window.SBUI = (function () {
     groupName: groupName,
     searchSort: searchSort,
     renderOpts: renderOpts,
+    renderSnippet: renderSnippet,
+    renderDetail: renderDetail,
+    fillGroupSelect: fillGroupSelect,
     previewHtml: previewHtml,
     issuePills: issuePills,
     renderSidebar: renderSidebar,

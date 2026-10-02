@@ -258,7 +258,7 @@
     else if (mode === 'line') lineNo = parseInt(params[1], 10);
     if (lineNo !== null) {
       if (!lineNo || lineNo < 1) return { value: null, state: 'invalid', note: 'line 需要一个从 1 开始的行号' };
-      var lines = text.split('\n');
+      var lines = text.split(/\r\n|\r|\n/);
       return { value: lineNo > lines.length ? '' : lines[lineNo - 1], state: 'ok' };
     }
     return { value: null, state: 'invalid', note: 'clipboard 只接受 trim / upper / lower / 数字 / line:n' };
@@ -370,7 +370,7 @@
 
     var segments = [];
     var variables = [];
-    var seenVars = {};
+    var seenVars = Object.create(null);
     var issues = [];
     var i = 0;
     var buf = '';
@@ -532,22 +532,24 @@
 
       // 按行截断只影响 text/html；variables 与 issues 始终覆盖整个模板
       if (limit > 0) {
-        var nl = txt.indexOf('\n');
-        if (nl >= 0) {
+        var breaks = /\r\n|\r|\n/g;
+        var br;
+        var cutAt = -1;
+        while ((br = breaks.exec(txt))) {
           if (line >= limit) {
-            var cut = txt.slice(0, nl);
-            if (cut !== '') {
-              text += cut;
-              html += seg.type === 'text' ? escapeHtml(cut) : tokenSpan(seg, cut);
-            }
-            truncated = true;
+            cutAt = br.index;
             break;
           }
-          line += txt.split('\n').length - 1;
-          text += txt;
-          html += seg.type === 'text' ? escapeHtml(txt) : tokenSpan(seg);
-          if (line >= limit) { truncated = true; break; }
-          continue;
+          line++;
+        }
+        if (cutAt >= 0) {
+          var cut = txt.slice(0, cutAt);
+          if (cut !== '') {
+            text += cut;
+            html += seg.type === 'text' ? escapeHtml(cut) : tokenSpan(seg, cut);
+          }
+          truncated = true;
+          break;
         }
       }
 
