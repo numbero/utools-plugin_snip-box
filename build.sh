@@ -9,7 +9,7 @@ mkdir -p dist/css dist/js
 
 cp plugin.json index.html preload.js icon.svg logo.png dist/
 cp css/tokens.css css/app.css css/dialog.css dist/css/
-cp js/engine.js js/store.js js/ui.js js/dialog.js js/app.js dist/js/
+cp js/engine.js js/store.js js/direct.js js/ui.js js/dialog.js js/app.js dist/js/
 
 # 发布文件不包含普通浏览器模拟入口。
 sed '/^<script>$/,/^<\/script>$/d' index.html > dist/index.html

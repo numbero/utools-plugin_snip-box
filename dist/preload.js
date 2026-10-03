@@ -1,5 +1,5 @@
 'use strict';
-// preload 跑在 Electron 渲染进程（nodeIntegration 开）。只做系统 I/O，经 window.api.*（全部 Promise）桥接给页面。
+// preload 跑在 Electron 渲染进程（nodeIntegration 开）。系统 I/O 经 window.api.*（全部 Promise）桥接。
 // 红线：渲染进程定时器没有 unref；本文件不使用任何定时器。
 
 var electron = require('electron');
@@ -77,3 +77,9 @@ window.api = {
     return file;
   })
 };
+
+// 在 HTML、CSS 和页面初始化前接管直达事件；无变量输出不依赖 DOM。
+require('./js/engine.js');
+require('./js/store.js');
+require('./js/direct.js');
+window.SBDirect.register();

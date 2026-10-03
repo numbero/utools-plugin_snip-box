@@ -92,7 +92,7 @@
   ↓ 回车 —— 插件窗口根本不出现
   ↓ 内容已粘进微信输入框
 ```
-> 实现：`setFeature({ code, cmds:['sign'], mainHide: true })`，`onPluginEnter` 收到 code 后直接渲染输出。
+> 实现：`setFeature({ code, cmds:['sign'], mainPush: true, mainHide: true })`。preload 提前加载无 DOM 的 `js/direct.js`，注册搜索框选择及进入事件。搜索框通过 `onMainPush` 的选择回调直接渲染输出，同步返回 `false`，不进入插件界面。无变量片段的普通进入也立即处理，不等待 HTML 或全库初始化；输出和使用记录更新结束后调用 `outPlugin()`，避免再次唤起仍停在直达指令页面。`mainHide` 只阻止非搜索框入口主动显窗，不能用于保证搜索框调用不显窗。静默搜索框路径需要在 uTools 中开启插件的内容推送并选择推送结果；普通指令入口仍可能短暂显窗。
 
 ### 旅程 C：新建片段（所见即所得）
 
@@ -181,7 +181,7 @@
 
 | ID | 需求 | 优先级 |
 |---|---|---|
-| FR-50 | 片段表单中可开启「直达关键字」，填写后用 `setFeature({code: 片段ID, cmds:[关键字], explain: 片段名, mainHide: true})` 注册 | P1 |
+| FR-50 | 片段表单中可开启「直达关键字」，注册 `mainPush: true`；搜索框选择回调中，无待填变量时直接输出并同步返回 `false`，有待填变量时返回 `true` 进入填值界面。无待填变量时同时设置 `mainHide: true` 供非搜索框入口使用 | P1 |
 | FR-51 | 关键字校验：≥2 字符；不得与其他片段的直达关键字重复；用 `getFeatures()` 检查是否与已有插件指令冲突并提示 | P1 |
 | FR-52 | 关闭开关 / 改名 / 删除片段时同步 `removeFeature` | P1 |
 | FR-53 | 设置项「直达关键字统一前缀」（如设为 `;`，则关键字 `sign` 实际注册为 `;sign`），避免污染 uTools 指令空间；默认关闭 | P2 |
@@ -208,7 +208,7 @@
 | FR-74 | 表单两个输出按钮：「粘贴 →」（默认输出方式）与「仅复制」，与 FR-30/FR-31 语义一致 | P1 |
 | FR-75 | 变量名允许中文、字母、数字、下划线，不允许空格与 `=` `}` `{`；同名变量在一段模板里出现多次时**只在表单里出现一次**，填值后所有位置同时替换 | P1 |
 | FR-76 | 全部变量为空时也允许输出（替换为空串），但对应输入框标灰提示「未填」，不阻断 | P1 |
-| FR-77 | **直达关键字场景**：若片段含待填变量，`mainHide` 直达模式无法弹表单，因此注册直达关键字时校验并提示「该片段含变量，直达时将弹出插件窗口填值」，此时自动降级为显窗模式（不设 `mainHide`） | P1 |
+| FR-77 | **直达关键字场景**：若片段含待填变量，搜索框选择回调同步返回 `true`，经 `onPluginEnter` 弹出填值表单；非搜索框入口同样需要显窗（`mainHide: false`）。注册直达关键字时提示「该片段含变量，直达时将弹出插件窗口填值」 | P1 |
 | FR-78 | 变量值本身**不递归解析**占位符（填 `{{date}}` 进去就是字面量 `{{date}}`），避免注入与不可预测行为 | P1 |
 | FR-79 | 编辑态预览里，待填变量显示为 `{{?姓名}}` 的高亮胶囊（蓝色）而非渲染值，并提示「输出时会弹框询问」 | P1 |
 
@@ -460,13 +460,14 @@
 ```
 plugin.json          main / logo / preload / features / pluginSetting
 index.html           单一页面，双视图（列表 / 编辑器）
-preload.js           系统 I/O 桥接，暴露 window.api
+preload.js           系统 I/O 桥接，暴露 window.api；提前加载直达运行时并注册事件
 js/
   bootstrap.js       延迟引导：轮询等 window.utools 就绪再启动
   utools-proxy.js    惰性代理 new Proxy({}, {get:(_,k)=>window.utools[k]})
   context.js         上下文快照抓取与冻结
   template.js        占位符解析 + 渲染引擎（纯函数，可独立验证）
   store.js           db 读写、导入导出、分组/片段 CRUD
+  direct.js          无 DOM 直达运行时：静默输出、普通入口输出后退出、调用路径诊断
   features.js        直达关键字注册与清理
   search.js          过滤 + 相关度/智能分排序
   ui-list.js         列表视图

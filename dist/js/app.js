@@ -3,6 +3,7 @@
 (function () {
   var E = window.SnippetEngine;
   var Store = window.SBStore;
+  var Direct = window.SBDirect;
   var UI = window.SBUI;
   var el = UI.el;
   var Dialog = window.SBDialog;
@@ -114,9 +115,10 @@
     return mode;
   }
 
-  function reportError(label, err) {
+  function reportError(label, err, silent) {
     lastError = { message: label + '：' + (err && err.message || err), at: new Date().toISOString() };
-    UI.toast(lastError.message, 'info');
+    if (silent) { try { U().showNotification(lastError.message); } catch (e) {} }
+    else UI.toast(lastError.message, 'info');
   }
   function outputApi(mode, text) {
     return Promise.resolve().then(function () {
@@ -126,7 +128,7 @@
     }).then(function (result) { if (result === false) throw new Error('输出未成功'); });
   }
   function doOutput(snippet, mode, text) {
-    if (!snippet || outputBusy) return Promise.resolve(false);
+    if (!snippet || outputBusy || Direct.isBusy()) return Promise.resolve(false);
     outputBusy = true;
     return outputApi(mode, text).then(function () {
       if (mode === 'copy') UI.toast('已复制 ' + text.length + ' 字符', 'ok');
@@ -146,7 +148,7 @@
     }).then(function (ok) { outputBusy = false; return ok; }, function (err) { outputBusy = false; reportError('输出失败', err); return false; });
   }
   function enterOutput(snippet, invert, exactMode) {
-    if (!snippet || outputBusy) return;
+    if (!snippet || outputBusy || Direct.isBusy()) return;
     var mode = exactMode || effectiveMode(invert);
     var r = UI.renderSnippet(state, snippet);
     if (r.variables.length) { openModal(snippet, mode); return; }
@@ -345,19 +347,23 @@
   }
 
   /* ---------- 动态指令（直达关键字） ---------- */
+  function hasVariables(snippet) {
+    return E.parse(snippet.content, { delimiter: state.settings.delimiter }).variables.length > 0;
+  }
   function syncFeatures() {
     if (!U() || !U().setFeature) return;
     var want = {};
     state.snippets.forEach(function (s) {
       if (!s.direct || !s.keyword) return;
       var code = 'snip:' + s.id;
-      var hasVar = E.render(s.content, renderOptsFor(s)).variables.length > 0;
+      var hasVar = hasVariables(s);
       want[code] = {
         code: code,
         explain: s.name,
         cmds: [state.settings.directPrefix + s.keyword],
         icon: 'icon.svg',
-        mainHide: !hasVar   // 含变量时静默直达无法弹表单，必须显窗（FR-77）
+        mainPush: true,
+        mainHide: !hasVar   // 非搜索框入口：含待填变量时需要显窗。
       };
     });
     var existing = [];
@@ -394,7 +400,7 @@
     var rtP = window.api ? window.api.getRuntime().catch(function () { return {}; }) : Promise.resolve({});
     return Promise.all([sysP, rtP]).then(function (res) {
       state.about = {
-        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.8',
+        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.9',
         appVersion: (res[0] && res[0].appVersion) || '',
         chrome: (res[1] && res[1].chrome) || '',
         node: (res[1] && res[1].node) || ''
@@ -462,6 +468,7 @@
         hasUrl: !!(state.ctx && state.ctx.url)
       },
       lastError: lastError,
+      direct: Direct.getDiagnostics(),
       ua: navigator.userAgent
     };
     U().copyText(JSON.stringify(info, null, 2));
@@ -503,24 +510,24 @@
 
   /* ---------- 进入分发 ---------- */
   function handleEnter(arg) {
-    captureContext().then(function () {
-      if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return; }
-      var code = arg && arg.code;
-      if (code && code.indexOf('snip:') === 0) {
-        var s = findById(code.slice(5));
-        if (!s) { UI.toast('片段不存在或已删除', 'info'); return; }
-        var r = E.render(s.content, renderOptsFor(s));
-        if (r.variables.length) {
+    if (Direct.isBusy()) return Promise.resolve(false);
+    if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return Promise.resolve(false); }
+    var code = arg && arg.code;
+    if (typeof code === 'string' && code.indexOf('snip:') === 0) {
+      try {
+        state.settings = Store.getSettings();
+        var snippet = Store.getSnippetSync(code.slice(5));
+        if (!snippet) { reportError('直达输出失败', new Error('片段不存在或直达指令已关闭'), true); return Promise.resolve(false); }
+        if (!hasVariables(snippet)) return Direct.handleEnter(arg);
+        return captureContext().then(function () {
           state.view = 'list';
           UI.showView('list');
           renderAll();
-          openModal(s, effectiveMode(false));
-        } else {
-          enterOutput(s, false);
-        }
-        return;
-      }
-      if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return; }
+          openModal(snippet, effectiveMode(false));
+        });
+      } catch (err) { reportError('直达输出失败', err, true); return Promise.resolve(false); }
+    }
+    return captureContext().then(function () {
       state.view = 'list';
       state.query = mainQuery(arg); el('searchInput').value = state.query; el('searchClear').hidden = !state.query;
       UI.showView('list');
@@ -813,11 +820,17 @@
     applyTheme();
     onResize();
     bindEvents();
-    setInterval(function () { if (state.ctx && state.view === 'list' && !state.modal && !Dialog.active()) { state.ctx.now = new Date(); state.renderCache = Object.create(null); UI.renderList(state); } }, 60000);
+    setInterval(function () { if (state.ctx && state.view === 'list' && !state.modal && !Direct.isBusy() && !outputBusy && !Dialog.active()) { state.ctx.now = new Date(); state.renderCache = Object.create(null); UI.renderList(state); } }, 60000);
     try {
-      U().onPluginEnter(function (arg) {
+      Direct.register();
+      Direct.setBusyHandler(function () { return outputBusy; });
+      Direct.setUseHandler(function (snippet) {
+        var cached = findById(snippet.id);
+        if (cached) Object.assign(cached, snippet);
+      });
+      Direct.setEnterHandler(function (arg) {
         if (!booted) { pendingEnter = arg; return; }
-        handleEnter(arg);
+        return handleEnter(arg);
       });
     } catch (e) { /* 预览环境 */ }
 
@@ -827,18 +840,15 @@
     }).then(function () {
       return loadAbout();
     }).then(function () {
-      return captureContext();
-    }).then(function () {
       booted = true;
       syncFeatures();
       if (!state.snippets.length && state.filter.type === 'all') state.activeId = null;
       else state.activeId = (UI.searchSort(state)[0] || {}).id || null;
+      /* mainPush 会在后台加载页面；只有真正收到进入事件才初始化界面与上下文。 */
       if (pendingEnter) {
         var arg = pendingEnter;
         pendingEnter = null;
-        handleEnter(arg);
-      } else {
-        handleEnter({ code: 'main' });
+        Direct.handleEnter(arg);
       }
     }).catch(function (err) {
       document.body.innerHTML = '<div style="padding:24px;font-family:monospace">Snippet Box 启动失败：' +

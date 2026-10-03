@@ -1,5 +1,5 @@
 'use strict';
-/* Snippet Box · 存储层：页面层独占 utools.db / dbStorage（分层铁律） */
+/* Snippet Box · 存储层：本模块独占 utools.db / dbStorage，页面与直达运行时共用。 */
 window.SBStore = (function () {
   var SNIP_PREFIX = 'snip:';
   var GROUPS_ID = 'meta:groups';
@@ -308,6 +308,14 @@ window.SBStore = (function () {
 
   var api = {
     DEFAULT_SETTINGS: copy(DEFAULT_SETTINGS),
+    /* onMainPush 的选择回调必须同步决定是否进入界面，冷启动也不能等全库加载。 */
+    getSnippetSync: function (id) {
+      if (!validId(id)) return null;
+      var doc;
+      try { doc = norm(db().get(SNIP_PREFIX + id)); }
+      catch (err) { if (err.notFound) return null; throw err; }
+      return doc && doc.type === 'snippet' ? fromDoc(doc) : null;
+    },
     loadAll: function () {
       return readAll().then(function (data) {
         groupsRevision = data.groupDoc ? data.groupDoc._rev : null;

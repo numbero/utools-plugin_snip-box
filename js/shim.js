@@ -76,6 +76,8 @@
   var features = [{ code: 'main', explain: '快捷粘贴带占位符的文本片段', cmds: ['snippet', 'snip', '片段'] }];
 
   var enterCb = null;
+  var pushCb = null;
+  var selectPushCb = null;
 
   window.utools = {
     db: db,
@@ -83,6 +85,7 @@
     dbCryptoStorage: { getItem: function (k) { return dbStorage.getItem('crypto:' + k); }, setItem: function (k, v) { dbStorage.setItem('crypto:' + k, v); } },
 
     onPluginEnter: function (cb) { enterCb = cb; },
+    onMainPush: function (cb, onSelect) { pushCb = cb; selectPushCb = onSelect; },
     onPluginOut: function () {},
     onPluginReady: function (cb) { setTimeout(cb, 0); },
 
@@ -133,7 +136,7 @@
 
   window.api = {
     readClipboard: function () { return Promise.resolve(''); },
-    getSys: function () { return Promise.resolve({ pluginVersion: '1.0.8' }); },
+    getSys: function () { return Promise.resolve({ pluginVersion: '1.0.9' }); },
     getRuntime: function () { return Promise.resolve({}); },
     readFile: function (file) {
       return Object.prototype.hasOwnProperty.call(files, file)
@@ -145,6 +148,17 @@
 
   window.__SB_SHIM__ = true;
   window.__SB_SIMULATE__ = function (arg) { if (enterCb) enterCb(arg); };
+  window.__SB_MAIN_PUSH__ = function (arg) { return pushCb ? pushCb(arg) : []; };
+  window.__SB_SELECT_PUSH__ = function (arg, index) {
+    var results = window.__SB_MAIN_PUSH__(arg);
+    var option = results[index || 0];
+    if (!option || !selectPushCb) return false;
+    var action = Object.assign({}, arg, { from: 'main', option: option });
+    var enter = selectPushCb(action) === true;
+    log('selectMainPush', { code: arg.code, enter: enter });
+    if (enter && enterCb) enterCb(action);
+    return enter;
+  };
 
   /* 模拟 uTools 唤起：?code=snip:xxx 可测直达关键字路径 */
   var q = location.search;

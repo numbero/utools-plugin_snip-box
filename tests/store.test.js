@@ -58,6 +58,27 @@ function harness(withPromises) {
   return env;
 }
 function snippet(id, content) { return { id: id, name: '测试片段', content: content || '原内容', group: '', useCount: 0 }; }
+test('同步读取单个片段支持冷启动，读取最新文档而非旧缓存', async function () {
+  var env = harness(true);
+  var s = snippet('sign'); s.direct = true; s.keyword = 'sgin';
+  await env.store.saveSnippet(s);
+  env.docs['snip:sign'].id = 'stale-id';
+  var first = env.store.getSnippetSync('sign');
+  assert.strictEqual(first.id, 'sign'); assert.strictEqual(first.direct, true);
+  assert.strictEqual(first._rev, env.docs['snip:sign']._rev);
+  first.content = '外部不能修改文档';
+  env.remoteEdit('snip:sign', { content: '{{?姓名}}' });
+  assert.strictEqual(env.store.getSnippetSync('sign').content, '{{?姓名}}');
+});
+test('同步读取处理缺失与数据库错误，不把失败结果当成片段', async function () {
+  var env = harness();
+  assert.strictEqual(env.store.getSnippetSync('missing'), null);
+  assert.strictEqual(env.store.getSnippetSync('../meta:groups'), null);
+  env.database.get = function () { return failure('not_found'); };
+  assert.strictEqual(env.store.getSnippetSync('missing'), null);
+  env.database.get = function () { return failure('disk_failure'); };
+  assert.throws(function () { env.store.getSnippetSync('sign'); }, /disk_failure/);
+});
 function backup(snippets, extra) {
   var value = { app: 'snippet-box', version: 1, snippets: snippets, groups: [] };
   Object.keys(extra || {}).forEach(function (key) { value[key] = extra[key]; });
