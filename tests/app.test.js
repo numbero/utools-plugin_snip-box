@@ -17,7 +17,7 @@ function harness() {
   vm.createContext(c);
   ['engine','ui'].forEach(name=>vm.runInContext(fs.readFileSync(path.join(root,'js',name+'.js'),'utf8'),c));
   c.SBUI.toast=(text)=>logs.push(['toast',text]); c.SBUI.renderList=()=>{};
-  const source = fs.readFileSync(path.join(root,'js/app.js'),'utf8').replace("  if (document.readyState === 'loading')", "  window.testApp = {state:state,doOutput:doOutput,effectiveMode:effectiveMode,enterOutput:enterOutput,modalOutput:modalOutput};\n  if (document.readyState === 'loading')");
+  const source = fs.readFileSync(path.join(root,'js/app.js'),'utf8').replace("  if (document.readyState === 'loading')", "  window.testApp = {state:state,doOutput:doOutput,effectiveMode:effectiveMode,enterOutput:enterOutput,modalOutput:modalOutput,mainQuery:mainQuery,bootstrap:bootstrap};\n  if (document.readyState === 'loading')");
   vm.runInContext(source,c);
   c.testApp.state.settings={output:'paste',pasteMode:'pasteText',invertModifier:true,delimiter:'mustache'};
   c.testApp.state.ctx={now:new Date(2026,9,3),clipboard:'snapshot'};
@@ -59,6 +59,28 @@ function harness() {
     const {app,c}=harness();app.state.query='sig';app.state.filter={type:'all'};
     app.state.snippets=[{id:'c',name:'邮箱 sig',content:'',keyword:'',searchKey:''},{id:'b',name:'邮件',content:'',keyword:'sig',searchKey:''},{id:'a',name:'signature',content:'',keyword:'',searchKey:''}];
     assert.equal(c.SBUI.searchSort(app.state).map(x=>x.id).join(','),'a,b,c');
+  });
+  await check('main command payload is excluded from search; actual arguments remain',async()=>{
+    const {app}=harness();
+    ['snippet','snip','片段','SNIPPET'].forEach(payload=>assert.equal(app.mainQuery({type:'text',payload}),''));
+    assert.equal(app.mainQuery({type:'text',payload:'snippet 邮件'}),'邮件');
+    assert.equal(app.mainQuery({type:'text',payload:'邮件'}),'邮件');
+    assert.equal(app.mainQuery({type:'text',payload:'snippetbox'}),'snippetbox');
+    assert.equal(app.mainQuery({type:'cmd',payload:'snippet'}),'');
+  });
+  await check('startup with a missing initialization flag performs no sample writes',async()=>{
+    const {app,c,nodes}=harness();let reads=0;
+    const node=()=>({hidden:false,value:'',classList:{toggle:()=>{}},addEventListener:()=>{},setAttribute:()=>{},querySelector:()=>({textContent:''}),focus:()=>{}});
+    c.document.getElementById=id=>nodes[id]||(nodes[id]=node());
+    c.document.documentElement=node();c.document.body=node();c.addEventListener=()=>{};c.setInterval=()=>1;
+    c.utools.onPluginEnter=()=>{};
+    c.SBStore.getSettings=()=>({output:'paste',theme:'auto',layout:'quick',directPrefix:'',delimiter:'mustache'});
+    c.SBStore.loadAll=()=>{reads++;return Promise.resolve({snippets:[],groups:[]});};
+    c.SBStore.getFlag=()=>{throw new Error('startup must not depend on an initialization flag');};
+    c.SBUI.renderSidebar=()=>{};c.SBUI.renderCtxStat=()=>{};
+    app.bootstrap();await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(reads,1);assert.equal(app.state.snippets.length,0);assert.equal(app.state.groups.length,0);
+    assert(!c.document.body.innerHTML,'startup should succeed without seeding');
   });
   console.log('Passed '+checks+' application checks.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

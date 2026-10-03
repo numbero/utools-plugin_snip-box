@@ -116,8 +116,8 @@
     getFeatures: function () { return clone(features); },
 
     /* 官方 typings：这两个都返回 Promise<string> */
-    readCurrentFolderPath: function () { return Promise.resolve('/Users/demo/Workspace/ui-design'); },
-    readCurrentBrowserUrl: function () { return Promise.resolve('https://www.u-tools.cn/docs/developer/'); },
+    readCurrentFolderPath: function () { return Promise.resolve(null); },
+    readCurrentBrowserUrl: function () { return Promise.resolve(null); },
 
     showOpenDialog: function () { return ['/tmp/snippetbox-import.json']; },
     showSaveDialog: function () { return '/tmp/snippetbox-export.json'; },
@@ -132,24 +132,9 @@
   window.__SB_FILES__ = files;
 
   window.api = {
-    readClipboard: function () { return Promise.resolve('https://github.com/numbero/snippet-box/pull/42'); },
-    getSys: function () {
-      return Promise.resolve({
-        user: 'demo',
-        home: '/Users/demo',
-        hostname: 'demo-mac.local',
-        platform: 'darwin',
-        os: 'Darwin 24.6.0',
-        arch: 'arm64',
-        tmpdir: '/var/folders/xx/tmp',
-        cwd: '/Users/demo/Workspace/ui-design',
-        appVersion: '5.1.0',
-        pluginVersion: '1.0.0'
-      });
-    },
-    getRuntime: function () {
-      return Promise.resolve({ node: '16.20.2', chrome: '91.0.4472.164', electron: '13.6.9' });
-    },
+    readClipboard: function () { return Promise.resolve(''); },
+    getSys: function () { return Promise.resolve({ pluginVersion: '1.0.1' }); },
+    getRuntime: function () { return Promise.resolve({}); },
     readFile: function (file) {
       return Object.prototype.hasOwnProperty.call(files, file)
         ? Promise.resolve(files[file])
@@ -165,10 +150,10 @@
   var q = location.search;
   var m = /code=([^&]*)/.exec(q);
   var code = m ? decodeURIComponent(m[1]) : 'main';
-  var payload = code === 'main' ? 'main' : code.replace(/^snip:/, '');
+  var payload = code === 'main' ? 'snippet' : code.replace(/^snip:/, '');
   var waited = 0;
   setTimeout(function fire() {
-    if (enterCb) return enterCb({ code: code, type: 'cmd', payload: payload });
+    if (enterCb) return enterCb({ code: code, type: code === 'main' ? 'text' : 'cmd', payload: payload });
     if (++waited > 30) return log('onPluginEnter 未注册，丢弃唤起', code);
     setTimeout(fire, 100);
   }, 0);

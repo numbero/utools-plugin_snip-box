@@ -289,15 +289,6 @@ window.SBUI = (function () {
     el('ctxStat').innerHTML = '<span class="ctx-snapshot" title="剪贴板快照：' + esc(clip || '空') + '">' + ICO.clip + ' <b>' + esc(short || '剪贴板为空') + '</b></span><button class="btn btn--sm btn--ghost" id="ctxRefresh" title="刷新上下文快照" aria-label="刷新上下文快照">' + ICO.refresh + '</button>';
   }
 
-  /* ---------- 空状态 ---------- */
-  function renderEmptyDemo(state) {
-    var tpl = '{{date:MM月DD日}} {{time}} · {{user}} 提交了 {{random:100-999}} 行改动';
-    var r = renderSnippet(state, { id: '__empty', content: tpl });
-    el('emptyDemo').innerHTML =
-      '<div style="color:var(--text-3)">模板&nbsp;&nbsp;' + esc(tpl) + '</div>' +
-      '<div style="margin-top:4px">结果&nbsp;&nbsp;' + (state.settings.colorTokens ? r.html : esc(r.text)) + '</div>';
-  }
-
   /* ---------- 视图切换 ---------- */
   function showView(name) {
     el('viewList').hidden = name !== 'list';
@@ -455,8 +446,8 @@ window.SBUI = (function () {
       '<span>片段保存在 uTools 数据库中，可能随 uTools 云同步。密码和密钥请使用专门的管理工具保存。</span></div>';
     html += row('导出 / 导入', '导出 JSON 备份；相同记录跳过，同 ID 内容冲突时创建副本',
       '<button class="btn btn--sm" id="btnExport">导出</button><button class="btn btn--sm" id="btnImport">导入</button>');
-    html += row('清空示例数据', '删除首次启动时导入的 4 条示例片段（自己建的片段不受影响）',
-      '<button class="btn btn--sm btn--danger" id="btnClearSeed">清空示例</button>');
+    html += row('清理旧版示例', '移除旧版自动生成的未修改示例和空默认分组，保留自己的片段',
+      '<button class="btn btn--sm btn--danger" id="btnClearSeed">清理旧示例</button>');
     html += '</div>';
 
     html += '<div class="set-sec"><h3 class="set-sec-title">关于</h3>';
@@ -496,7 +487,6 @@ window.SBUI = (function () {
     renderSidebar: renderSidebar,
     renderList: renderList,
     renderCtxStat: renderCtxStat,
-    renderEmptyDemo: renderEmptyDemo,
     showView: showView,
     syncEditorFields: syncEditorFields,
     renderEditorPreview: renderEditorPreview,

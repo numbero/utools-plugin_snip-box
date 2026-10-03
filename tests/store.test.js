@@ -316,7 +316,8 @@ test('回滚保留并发片段时也保留其新分组，避免悬空引用', as
 
 test('导出/导入保留数据与主题且剔除未知字段、版本元数据', async function () {
   var first = harness();
-  await first.store.seedSnippets();
+  await first.store.saveGroups([{ id: 'g-work', name: '工作' }, { id: 'g-life', name: '个人' }]);
+  await first.store.saveSnippet(Object.assign(snippet('s1'), { group: 'g-work' }));
   var state = await first.store.loadAll();
   state.settings = first.store.getSettings();
   state.snippets[0].unknown = true;
@@ -326,9 +327,70 @@ test('导出/导入保留数据与主题且剔除未知字段、版本元数据'
   var second = harness(true);
   await second.store.importObject(exported);
   var restored = await second.store.loadAll();
-  assert.strictEqual(restored.snippets.length, 4);
+  assert.strictEqual(restored.snippets.length, 1);
   assert.strictEqual(restored.groups.length, 2);
   assert.strictEqual(second.store.getSettings().style, 'orange');
+});
+
+function legacySample(id) {
+  var t = '2026-10-02T12:00:00.000Z';
+  return { id: id, name: 'git commit 模板', group: 'g-work', pinned: true, direct: true, keyword: 'commit', searchKey: 'commit git', content: 'feat({{?scope}}): {{?改动}}\n\n#{{date:YYYY-MM-DD}} by {{user}}', useCount: 84, lastUsedAt: t, createdAt: t, updatedAt: t, type: 'snippet', _id: 'snip:' + id, _rev: '1-legacy' };
+}
+test('首次安装只读取空库，不创建片段、默认分组或演示统计', async function () {
+  var env = harness();
+  env.store.getSettings();
+  var state = await env.store.loadAll();
+  assert.strictEqual(state.snippets.length, 0);
+  assert.strictEqual(state.groups.length, 0);
+  assert.strictEqual(env.puts, 0);
+  assert.strictEqual(env.store.seedSnippets, undefined);
+});
+test('清理重复旧示例与空默认分组，不依赖重装后丢失的标记', async function () {
+  var env = harness(true);
+  env.docs['snip:old1'] = legacySample('old1');
+  env.docs['snip:old2'] = legacySample('old2');
+  await env.store.saveGroups([{id:'g-work',name:'工作'},{id:'g-life',name:'个人'}]);
+  var plan = await env.store.planLegacyCleanup();
+  assert.strictEqual(plan.snippets.length, 2);
+  var result = await env.store.clearLegacySamples(plan);
+  assert.strictEqual(result.removed, 2);
+  var data = await env.store.loadAll();
+  assert.strictEqual(data.snippets.length, 0);
+  assert.strictEqual(data.groups.length, 0);
+});
+test('旧seededIds污染用户ID时，自己的片段和使用中的分组仍保留', async function () {
+  var env = harness();
+  env.docs['snip:old1'] = legacySample('old1');
+  await env.store.saveGroups([{id:'g-work',name:'工作'},{id:'g-life',name:'个人'},{id:'g-own',name:'我的分组'}]);
+  await env.store.saveSnippet(Object.assign(snippet('own','我的真实模板'),{group:'g-work'}));
+  env.values.seededIds = ['old1','own'];
+  await env.store.clearLegacySamples(await env.store.planLegacyCleanup());
+  var data = await env.store.loadAll();
+  assert.strictEqual(data.snippets.length, 1);
+  assert.strictEqual(data.snippets[0].id, 'own');
+  assert.deepStrictEqual(Array.from(data.groups, function (g) { return g.id; }), ['g-work','g-own']);
+});
+test('改过名称、内容、分组、配置或已保存过的旧示例不清理', async function () {
+  var env = harness();
+  var changes = [{name:'我的commit'}, {content:'真实模板'}, {group:''}, {pinned:false}, {updatedAt:'2026-10-02T12:00:05.000Z'}, {useCount:0}];
+  changes.forEach(function (change, i) { var s = legacySample('edited'+i); Object.assign(s, change); env.docs[s._id] = s; });
+  var plan = await env.store.planLegacyCleanup();
+  assert.strictEqual(plan.snippets.length, 0);
+  await env.store.clearLegacySamples(plan);
+  assert.strictEqual(Object.keys(env.docs).length, changes.length);
+});
+test('确认清理期间被同步更新的片段和分组不覆盖', async function () {
+  var env = harness();
+  env.docs['snip:old1'] = legacySample('old1');
+  await env.store.saveGroups([{id:'g-work',name:'工作'},{id:'g-life',name:'个人'}]);
+  var plan = await env.store.planLegacyCleanup();
+  env.remoteEdit('snip:old1', {content:'远端改好的模板'});
+  env.remoteEdit('meta:groups', {groups:[{id:'g-work',name:'新工作'},{id:'g-life',name:'个人'}]});
+  var result = await env.store.clearLegacySamples(plan);
+  assert.strictEqual(result.removed, 0);
+  assert.strictEqual(result.preserved, 1);
+  assert.strictEqual(env.docs['snip:old1'].content, '远端改好的模板');
+  assert.strictEqual(env.docs['meta:groups'].groups[0].name, '新工作');
 });
 
 (async function () {

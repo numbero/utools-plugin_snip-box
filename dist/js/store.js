@@ -63,6 +63,21 @@ window.SBStore = (function () {
       updatedAt: validDate(s.updatedAt) ? s.updatedAt : t
     };
   }
+  var LEGACY_SAMPLES = [
+    { name: 'git commit 模板', group: 'g-work', pinned: true, direct: true, keyword: 'commit', searchKey: 'commit git', content: 'feat({{?scope}}): {{?改动}}\n\n#{{date:YYYY-MM-DD}} by {{user}}', count: 84 },
+    { name: '邮箱签名', group: 'g-work', pinned: true, direct: true, keyword: 'sign', searchKey: 'sign 签名', content: '--\n{{user}} · {{date:YYYY年MM月}}', count: 61 },
+    { name: '日报抬头', group: 'g-work', pinned: false, direct: false, keyword: '', searchKey: 'daily 日报', content: '# 日报 {{date:-1d|YYYY/MM/DD}}（{{date:-1d|dddd}}）\n- 今日完成：\n- 明日计划：', count: 37 },
+    { name: '引用剪贴板', group: '', pinned: false, direct: false, keyword: '', searchKey: 'quote 引用', content: '> {{clipboard}}\n>\n> —— 剪贴板于 {{time:HH:mm}} 捕获', count: 12 }
+  ];
+  function isLegacySample(s) {
+    // 不使用旧 seededIds：旧版曾把用户记录也写入该列表。
+    // 示例的假使用次数 + 完整内容/配置 + 初始更新时间共同识别；已编辑的示例保留。
+    var created = Date.parse(s.createdAt), updated = Date.parse(s.updatedAt);
+    if (!isFinite(created) || !isFinite(updated) || updated < created || updated - created > 1000) return false;
+    return LEGACY_SAMPLES.some(function (sample) {
+      return s.useCount >= sample.count && ['name', 'content', 'group', 'searchKey', 'keyword', 'pinned', 'direct'].every(function (key) { return s[key] === sample[key]; });
+    });
+  }
   function validateSnippet(raw, label, requireId) {
     if (!object(raw)) invalid(label, '片段必须是对象');
     if (requireId && !validId(raw.id)) invalid(label, 'id 必须是 1–128 位字母、数字、点、横线或下划线');
@@ -357,20 +372,35 @@ window.SBStore = (function () {
     },
     getFlag: function (key) { return kv().getItem(key); },
     setFlag: function (key, val) { return kv().setItem(key, val); },
-    seedSnippets: function () {
-      var t = nowIso();
-      var seeds = [
-        { id: newId(), name: 'git commit 模板', group: 'g-work', pinned: true, direct: true, keyword: 'commit', searchKey: 'commit git', content: 'feat({{?scope}}): {{?改动}}\n\n#{{date:YYYY-MM-DD}} by {{user}}', useCount: 84 },
-        { id: newId(), name: '邮箱签名', group: 'g-work', pinned: true, direct: true, keyword: 'sign', searchKey: 'sign 签名', content: '--\n{{user}} · {{date:YYYY年MM月}}', useCount: 61 },
-        { id: newId(), name: '日报抬头', group: 'g-work', searchKey: 'daily 日报', content: '# 日报 {{date:-1d|YYYY/MM/DD}}（{{date:-1d|dddd}}）\n- 今日完成：\n- 明日计划：', useCount: 37 },
-        { id: newId(), name: '引用剪贴板', group: '', searchKey: 'quote 引用', content: '> {{clipboard}}\n>\n> —— 剪贴板于 {{time:HH:mm}} 捕获', useCount: 12 }
-      ];
-      var chain = Promise.resolve();
-      seeds.forEach(function (s) {
-        s.lastUsedAt = t; s.createdAt = t; s.updatedAt = t;
-        chain = chain.then(function () { return api.saveSnippet(s); });
+    // 旧版灌入的示例仅用于识别和清理；正式版本不再生成这些记录。
+    planLegacyCleanup: function () {
+      return readAll().then(function (data) {
+        return { snippets: data.snippets.filter(isLegacySample), groupDoc: data.groupDoc };
       });
-      return chain.then(function () { return api.saveGroups([{ id: 'g-work', name: '工作' }, { id: 'g-life', name: '个人' }]); });
+    },
+    clearLegacySamples: function (plan) {
+      var removed = 0, preserved = 0;
+      var chain = Promise.resolve();
+      (plan.snippets || []).forEach(function (sample) {
+        chain = chain.then(function () {
+          return getDoc(SNIP_PREFIX + sample.id).then(function (cur) {
+            if (!cur) return;
+            if (cur._rev !== sample._rev || !isLegacySample(fromDoc(cur))) { preserved++; return; }
+            return dbCall('remove', cur).then(function () { removed++; });
+          });
+        });
+      });
+      return chain.then(function () {
+        return readAll().then(function (data) {
+          var groups = data.groups.filter(function (g) {
+            var legacy = (g.id === 'g-work' && g.name === '工作') || (g.id === 'g-life' && g.name === '个人');
+            return !legacy || data.snippets.some(function (item) { return item.group === g.id; });
+          });
+          // 分组被同步更新时保留，避免覆盖清理确认期间的改名或新分组。
+          if (!data.groupDoc || !plan.groupDoc || data.groupDoc._rev !== plan.groupDoc._rev || groups.length === data.groups.length) return;
+          return writeGroups(groups, data.groupDoc);
+        });
+      }).then(function () { return { removed: removed, preserved: preserved }; });
     },
     exportObject: function (state) {
       return {

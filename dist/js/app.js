@@ -27,7 +27,6 @@
 
   var booted = false;
   var pendingEnter = null;
-  var emptyTimer = null;
   var searchTimer = null;
   var outputBusy = false;
   var saving = false;
@@ -101,13 +100,6 @@
       el('listBody').hidden = isEmpty;
       el('emptyState').hidden = !isEmpty;
       el('searchInput').disabled = isEmpty;
-      if (isEmpty) {
-        UI.renderEmptyDemo(state);
-        if (!emptyTimer) emptyTimer = setInterval(function () { UI.renderEmptyDemo(state); }, 2000);
-      } else if (emptyTimer) {
-        clearInterval(emptyTimer);
-        emptyTimer = null;
-      }
       UI.renderSidebar(state);
       UI.renderList(state);
       UI.renderCtxStat(state);
@@ -403,7 +395,7 @@
     var rtP = window.api ? window.api.getRuntime().catch(function () { return {}; }) : Promise.resolve({});
     return Promise.all([sysP, rtP]).then(function (res) {
       state.about = {
-        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.0',
+        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.1',
         appVersion: (res[0] && res[0].appVersion) || '',
         chrome: (res[1] && res[1].chrome) || '',
         node: (res[1] && res[1].node) || ''
@@ -477,43 +469,29 @@
     UI.toast('诊断信息已复制，粘给我即可', 'ok');
   }
 
-  function clearSeed() {
-    return Dialog.open({title:'清空示例片段？',message:'将删除首次导入的示例片段，包括你对示例的修改。',actions:[{value:'cancel',label:'取消'},{value:'delete',label:'清空示例',danger:true}]}).then(function (choice) { if (choice) clearSeedConfirmed(); });
-  }
-  function clearSeedConfirmed() {
-    var ids = Store.getFlag('seededIds') || [];
-    if (!ids.length) { UI.toast('没有示例数据可清', 'info'); return; }
-    var chain = Promise.resolve();
-    ids.forEach(function (id) {
-      chain = chain.then(function () {
-        var s = findById(id);
-        return s ? Store.deleteSnippet(s) : Promise.resolve();
-      });
+  function reloadLibrary() {
+    return Store.loadAll().then(function (data) {
+      state.snippets = data.snippets; state.groups = data.groups;
+      if (state.filter.type === 'group' && !data.groups.some(function (g) { return g.id === state.filter.id; })) state.filter = { type: 'all' };
+      state.renderCache = Object.create(null); syncFeatures(); renderAll();
+      if (state.view === 'settings') refreshAboutThenSettings();
     });
-    chain.then(function () {
-      Store.setFlag('seededIds', []);
-      return Store.loadAll();
-    }).then(function (data) {
-      state.snippets = data.snippets;
-      state.groups = data.groups;
-      syncFeatures();
-      renderAll();
-      UI.toast('示例已清空', 'ok');
-    }).catch(function (err) { reportError('清空失败', err); });
+  }
+  function clearSeed() {
+    return Store.planLegacyCleanup().then(function (plan) {
+      return Dialog.open({ title:'清理旧版示例？', message:'识别到 ' + plan.snippets.length + ' 条未修改的旧示例。会同时移除已空的默认分组，自己创建或修改过的片段会保留。', actions:[{value:'cancel',label:'取消'},{value:'delete',label:'清理旧示例',danger:true}] }).then(function (choice) {
+        if (!choice) return;
+        return Store.clearLegacySamples(plan).then(function (result) {
+          return reloadLibrary().then(function () { UI.toast('已清理 ' + result.removed + ' 条旧示例' + (result.preserved ? ' · 保留 ' + result.preserved + ' 条刚更新的记录' : ''), 'ok'); });
+        });
+      });
+    }).catch(function (err) { return reloadLibrary().then(function () { reportError('示例清理未完成', err); }); });
   }
 
-  function seed() {
-    return Store.seedSnippets().then(function () {
-      return Store.loadAll();
-    }).then(function (data) {
-      state.snippets = data.snippets;
-      state.groups = data.groups;
-      var ids = state.snippets.map(function (s) { return s.id; });
-      Store.setFlag('seededIds', ids);
-      syncFeatures();
-      renderAll();
-      UI.toast('已导入 4 条示例', 'ok');
-    });
+  function mainQuery(arg) {
+    if (!arg || arg.type !== 'text' || typeof arg.payload !== 'string') return '';
+    var text = arg.payload.trim();
+    return text.replace(/^(?:snippet|snip|片段)(?:\s+|$)/i, '').trim();
   }
 
   /* ---------- 进入分发 ---------- */
@@ -537,7 +515,7 @@
       }
       if (state.view === 'editor' && isDirty()) { UI.toast('已保留未保存的修改', 'info'); return; }
       state.view = 'list';
-      if (arg && arg.type === 'text' && typeof arg.payload === 'string') { state.query = arg.payload; el('searchInput').value = state.query; el('searchClear').hidden = !state.query; }
+      state.query = mainQuery(arg); el('searchInput').value = state.query; el('searchClear').hidden = !state.query;
       UI.showView('list');
       renderAll();
       el('searchInput').focus();
@@ -564,7 +542,6 @@
     });
     el('btnNew').addEventListener('click', function () { openEditor(blankDraft()); });
     el('btnEmptyNew').addEventListener('click', function () { openEditor(blankDraft()); });
-    el('btnEmptySeed').addEventListener('click', seed);
     el('btnSettings').addEventListener('click', function () {
       state.view = 'settings';
       UI.showView('settings');
@@ -838,12 +815,6 @@
     Store.loadAll().then(function (data) {
       state.snippets = data.snippets;
       state.groups = data.groups;
-      var seeded = Store.getFlag('seeded');
-      var next = Promise.resolve();
-      if (!seeded) {
-        next = seed().then(function () { Store.setFlag('seeded', true); });
-      }
-      return next;
     }).then(function () {
       return loadAbout();
     }).then(function () {
