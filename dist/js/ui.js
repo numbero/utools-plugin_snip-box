@@ -54,18 +54,35 @@ window.SBUI = (function () {
     return (s.pinned ? 1e12 : 0) + (s.useCount || 0) * 1e6 + rec;
   }
 
+  function searchMatches(state) {
+    var q = (state.query || '').trim();
+    return state.snippets.filter(function (s) { return !q || relevance(s, q) > 0; });
+  }
+  function matchesFilter(s, f, now) {
+    f = f || { type: 'all' };
+    if (f.type === 'pinned') return !!s.pinned;
+    if (f.type === 'recent') return !!s.lastUsedAt && (now - new Date(s.lastUsedAt).getTime()) < 30 * 86400000;
+    if (f.type === 'group') return s.group === f.id;
+    if (f.type === 'ungrouped') return !s.group;
+    return true;
+  }
+  // 标签是当前搜索词下的可见数量；点击任意标签，其数字就是列表条数。
+  function filterCounts(state) {
+    var items = searchMatches(state), now = Date.now();
+    var counts = { all: items.length, pinned: 0, recent: 0, ungrouped: 0, groups: Object.create(null) };
+    items.forEach(function (s) {
+      if (matchesFilter(s, {type:'pinned'}, now)) counts.pinned++;
+      if (matchesFilter(s, {type:'recent'}, now)) counts.recent++;
+      if (matchesFilter(s, {type:'ungrouped'}, now)) counts.ungrouped++;
+      counts.groups[s.group] = (counts.groups[s.group] || 0) + 1;
+    });
+    return counts;
+  }
   function searchSort(state) {
     var q = (state.query || '').trim();
-    var f = state.filter || { type: 'all' };
     var sort = state.sort || state.settings.sort || 'smart';
-    var items = state.snippets.filter(function (s) {
-      if (f.type === 'pinned') return s.pinned;
-      if (f.type === 'recent') return s.lastUsedAt && (Date.now() - new Date(s.lastUsedAt).getTime()) < 30 * 86400000;
-      if (f.type === 'group') return s.group === f.id;
-      if (f.type === 'ungrouped') return !s.group;
-      return true;
-    });
-    if (q) items = items.filter(function (s) { return relevance(s, q) > 0; });
+    var now = Date.now();
+    var items = searchMatches(state).filter(function (s) { return matchesFilter(s, state.filter, now); });
     items.sort(function (a, b) {
       if (q) {
         var score = relevance(b, q) - relevance(a, q);
@@ -143,18 +160,18 @@ window.SBUI = (function () {
 
   /* ---------- 侧栏与快速筛选 ---------- */
   function renderSidebar(state) {
-    var counts = { all: state.snippets.length, pinned: 0, recent: 0, ungrouped: 0 };
-    var perGroup = Object.create(null);
-    state.snippets.forEach(function (s) {
-      if (s.pinned) counts.pinned++;
-      if (s.lastUsedAt && (Date.now() - new Date(s.lastUsedAt).getTime()) < 30 * 86400000) counts.recent++;
-      if (!s.group) counts.ungrouped++;
-      perGroup[s.group] = (perGroup[s.group] || 0) + 1;
-    });
+    var focused = document.activeElement;
+    var source = focused && focused.closest && focused.closest('[data-filter], [data-group-act]');
+    var restore = source && (el('sidebar').contains(source) || el('filterBar').contains(source)) ? {
+      pane: el('sidebar').contains(source) ? 'sidebar' : 'filterBar',
+      filter: source.getAttribute('data-filter'), menu: source.getAttribute('data-group-act'), id: source.getAttribute('data-id') || ''
+    } : null;
+    var counts = filterCounts(state);
+    var perGroup = counts.groups;
     var f = state.filter || { type: 'all' };
     function item(type, id, ico, name, count, chip) {
       var cur = f.type === type && (f.id || '') === (id || '');
-      return '<button class="' + (chip ? 'filter-chip' : 'side-item') + '" data-filter="' + type + '" data-id="' + esc(id || '') + '" aria-current="' + cur + '">' +
+      return '<button class="' + (chip ? 'filter-chip' : 'side-item') + '" data-filter="' + type + '" data-id="' + esc(id || '') + '" aria-current="' + cur + '" title="' + esc(name + ((state.query || '').trim() ? ' · 当前搜索匹配 ' : ' · ') + count + ' 个片段') + '">' +
         (chip ? '' : '<span class="ico">' + ico + '</span>') + '<span class="nm">' + esc(name) + '</span><span class="ct">' + count + '</span></button>';
     }
     var html = '<div class="side-sec">片段库</div>';
@@ -177,6 +194,12 @@ window.SBUI = (function () {
     chips += '<button class="filter-chip" data-filter="__addgroup" title="新建分组" aria-label="新建分组">+</button>';
     el('sidebar').innerHTML = html;
     el('filterBar').innerHTML = chips;
+    if (restore) {
+      var buttons = el(restore.pane).querySelectorAll('[data-filter], [data-group-act]');
+      for (var i = 0; i < buttons.length; i++) {
+        if (buttons[i].getAttribute('data-filter') === restore.filter && buttons[i].getAttribute('data-group-act') === restore.menu && (buttons[i].getAttribute('data-id') || '') === restore.id) { buttons[i].focus({ preventScroll: true }); break; }
+      }
+    }
   }
 
   /* ---------- 列表 ---------- */
@@ -199,6 +222,7 @@ window.SBUI = (function () {
     return { all: '全部片段', pinned: '置顶片段', recent: '最近使用', ungrouped: '未分组' }[f.type] || '全部片段';
   }
   function renderList(state) {
+    renderSidebar(state);
     var list = el('list');
     var focused = document.activeElement;
     var keepFocus = focused && list.contains(focused);
@@ -232,7 +256,7 @@ window.SBUI = (function () {
     list.innerHTML = html;
     if (state.activeId) list.setAttribute('aria-activedescendant', rowId(state.activeId));
     else list.removeAttribute('aria-activedescendant');
-    el('libraryTitle').textContent = q ? '搜索结果' : filterTitle(state);
+    el('libraryTitle').textContent = q ? (state.filter.type === 'all' ? '搜索结果' : filterTitle(state) + ' · 搜索结果') : filterTitle(state);
     el('libraryCount').textContent = items.length;
     el('sortSelect').value = state.sort || state.settings.sort || 'smart';
     if (keepFocus) {
@@ -446,6 +470,7 @@ window.SBUI = (function () {
       '<span>片段保存在 uTools 数据库中，可能随 uTools 云同步。密码和密钥请使用专门的管理工具保存。</span></div>';
     html += row('导出 / 导入', '导出 JSON 备份；相同记录跳过，同 ID 内容冲突时创建副本',
       '<button class="btn btn--sm" id="btnExport">导出</button><button class="btn btn--sm" id="btnImport">导入</button>');
+    html += row('范例片段', '添加可编辑、可复制的模板范例；已有范例不会重复添加', '<button class="btn btn--sm" id="btnAddExamples">添加范例</button>');
     html += row('清理旧版示例', '移除旧版自动生成的未修改示例和空默认分组，保留自己的片段',
       '<button class="btn btn--sm btn--danger" id="btnClearSeed">清理旧示例</button>');
     html += '</div>';
@@ -478,6 +503,7 @@ window.SBUI = (function () {
     groupColor: groupColor,
     groupName: groupName,
     searchSort: searchSort,
+    filterCounts: filterCounts,
     renderOpts: renderOpts,
     renderSnippet: renderSnippet,
     renderDetail: renderDetail,

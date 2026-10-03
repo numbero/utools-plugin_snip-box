@@ -69,6 +69,13 @@ window.SBStore = (function () {
     { name: '日报抬头', group: 'g-work', pinned: false, direct: false, keyword: '', searchKey: 'daily 日报', content: '# 日报 {{date:-1d|YYYY/MM/DD}}（{{date:-1d|dddd}}）\n- 今日完成：\n- 明日计划：', count: 37 },
     { name: '引用剪贴板', group: '', pinned: false, direct: false, keyword: '', searchKey: 'quote 引用', content: '> {{clipboard}}\n>\n> —— 剪贴板于 {{time:HH:mm}} 捕获', count: 12 }
   ];
+  var EXAMPLE_GROUP = { id: 'g-examples', name: '范例' };
+  var EXAMPLES = [
+    { id: 'example-commit', name: 'git commit 模板', searchKey: 'commit git 范例', pinned: true, content: 'feat({{?scope=ui}}): {{?改动说明}}\n\n# {{date:YYYY-MM-DD}}' },
+    { id: 'example-signature', name: '邮箱签名', searchKey: 'sign 签名 范例', pinned: true, content: '祝好，\n{{?姓名}}\n{{?邮箱}}\n{{date:YYYY年MM月}}' },
+    { id: 'example-daily', name: '日报抬头', searchKey: 'daily 日报 范例', content: '# 日报 {{date:YYYY/MM/DD}}（{{weekday}}）\n- 今日完成：\n- 明日计划：' },
+    { id: 'example-clipboard', name: '引用剪贴板', searchKey: 'quote 引用 范例', content: '> {{clipboard}}\n>\n> —— 引用于 {{date:YYYY-MM-DD}}' }
+  ];
   function isLegacySample(s) {
     // 不使用旧 seededIds：旧版曾把用户记录也写入该列表。
     // 示例的假使用次数 + 完整内容/配置 + 初始更新时间共同识别；已编辑的示例保留。
@@ -372,6 +379,37 @@ window.SBStore = (function () {
     },
     getFlag: function (key) { return kv().getItem(key); },
     setFlag: function (key, val) { return kv().setItem(key, val); },
+    addExamples: function (options) {
+      var ledger = { snippets: [], groups: null, settings: null };
+      return readAll().then(function (data) {
+        if (options && options.onlyIfEmpty && (data.snippets.length || kv().getItem('examplesInitializedV2'))) {
+          if (data.snippets.length) kv().setItem('examplesInitializedV2', true);
+          return { added: 0, skipped: EXAMPLES.length };
+        }
+        var pending = EXAMPLES.filter(function (example) { return !data.snippets.some(function (s) { return s.id === example.id; }); });
+        var result = { added: 0, skipped: EXAMPLES.length - pending.length };
+        var chain = Promise.resolve();
+        if (pending.length && !data.groups.some(function (g) { return g.id === EXAMPLE_GROUP.id; })) {
+          chain = writeGroups(data.groups.concat([EXAMPLE_GROUP]), data.groupDoc).then(function (res) { ledger.groups = { before: data.groupDoc, rev: res.rev }; });
+        }
+        pending.forEach(function (example) {
+          chain = chain.then(function () {
+            var t = nowIso();
+            var draft = validateSnippet(Object.assign({}, example, { group: EXAMPLE_GROUP.id, direct: false, keyword: '', useCount: 0, lastUsedAt: '', createdAt: t, updatedAt: t }), '范例', true);
+            return dbCall('put', toDoc(draft)).then(function (res) {
+              ledger.snippets.push({ id: res.id, rev: res.rev, name: draft.name }); result.added++;
+            }, function (err) { if (err.conflict) { result.skipped++; return; } throw err; });
+          });
+        });
+        return chain.then(function () { kv().setItem('examplesInitializedV2', true); return result; });
+      }).catch(function (err) {
+        return readAll().then(function (data) {
+          if (ledger.groups && data.snippets.some(function (s) { return s.group === EXAMPLE_GROUP.id && !ledger.snippets.some(function (item) { return item.id === SNIP_PREFIX + s.id; }); })) ledger.groups = null;
+        }).catch(function () { ledger.groups = null; }).then(function () { return rollbackImport(ledger); }).then(function (retained) {
+          throw new Error('范例添加失败：' + err.message + (retained.length ? '。' + retained.join('；') : '。本次新增已撤销，其他记录已保留。'));
+        });
+      });
+    },
     // 旧版灌入的示例仅用于识别和清理；正式版本不再生成这些记录。
     planLegacyCleanup: function () {
       return readAll().then(function (data) {

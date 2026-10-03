@@ -100,7 +100,6 @@
       el('listBody').hidden = isEmpty;
       el('emptyState').hidden = !isEmpty;
       el('searchInput').disabled = isEmpty;
-      UI.renderSidebar(state);
       UI.renderList(state);
       UI.renderCtxStat(state);
     }
@@ -395,7 +394,7 @@
     var rtP = window.api ? window.api.getRuntime().catch(function () { return {}; }) : Promise.resolve({});
     return Promise.all([sysP, rtP]).then(function (res) {
       state.about = {
-        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.1',
+        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.2',
         appVersion: (res[0] && res[0].appVersion) || '',
         chrome: (res[1] && res[1].chrome) || '',
         node: (res[1] && res[1].node) || ''
@@ -488,6 +487,14 @@
     }).catch(function (err) { return reloadLibrary().then(function () { reportError('示例清理未完成', err); }); });
   }
 
+  function addExamples() {
+    return Store.addExamples().then(function (result) {
+      state.query = ''; state.filter = { type: 'all' };
+      el('searchInput').value = ''; el('searchClear').hidden = true;
+      return reloadLibrary().then(function () { backToList(true); UI.toast(result.added ? '已添加 ' + result.added + ' 个范例' : '范例已存在，可在片段列表查看', 'ok'); });
+    }).catch(function (err) { return reloadLibrary().then(function () { reportError('添加范例未完成', err); }); });
+  }
+
   function mainQuery(arg) {
     if (!arg || arg.type !== 'text' || typeof arg.payload !== 'string') return '';
     var text = arg.payload.trim();
@@ -542,6 +549,7 @@
     });
     el('btnNew').addEventListener('click', function () { openEditor(blankDraft()); });
     el('btnEmptyNew').addEventListener('click', function () { openEditor(blankDraft()); });
+    el('btnEmptyExamples').addEventListener('click', addExamples);
     el('btnSettings').addEventListener('click', function () {
       state.view = 'settings';
       UI.showView('settings');
@@ -559,7 +567,7 @@
         Dialog.open({title:'管理分组',actions:[{value:'cancel',label:'取消'}].concat(state.groups.map(function (g) { return {value:g.id,label:g.name}; }))}).then(function (id) { if (id) groupMenu(id); }); return;
       }
       state.filter = {type:f,id:btn.getAttribute('data-id') || ''};
-      UI.renderSidebar(state); UI.renderList(state);
+      UI.renderList(state);
     }
     el('sidebar').addEventListener('click', filterClick);
     el('filterBar').addEventListener('click', filterClick);
@@ -666,6 +674,7 @@
       if (ev.target.closest('#btnExport')) return exportData();
       if (ev.target.closest('#btnImport')) return importData();
       if (ev.target.closest('#btnClearSeed')) return clearSeed();
+      if (ev.target.closest('#btnAddExamples')) return addExamples();
       if (ev.target.closest('#btnDiag')) return copyDiagnostics();
     });
     el('settingsBody').addEventListener('change', function (ev) {
@@ -812,7 +821,7 @@
       });
     } catch (e) { /* 预览环境 */ }
 
-    Store.loadAll().then(function (data) {
+    Store.addExamples({ onlyIfEmpty: true }).catch(function (err) { reportError('范例初始化未完成', err); }).then(function () { return Store.loadAll(); }).then(function (data) {
       state.snippets = data.snippets;
       state.groups = data.groups;
     }).then(function () {

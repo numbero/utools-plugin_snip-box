@@ -17,7 +17,7 @@ function harness() {
   vm.createContext(c);
   ['engine','ui'].forEach(name=>vm.runInContext(fs.readFileSync(path.join(root,'js',name+'.js'),'utf8'),c));
   c.SBUI.toast=(text)=>logs.push(['toast',text]); c.SBUI.renderList=()=>{};
-  const source = fs.readFileSync(path.join(root,'js/app.js'),'utf8').replace("  if (document.readyState === 'loading')", "  window.testApp = {state:state,doOutput:doOutput,effectiveMode:effectiveMode,enterOutput:enterOutput,modalOutput:modalOutput,mainQuery:mainQuery,bootstrap:bootstrap};\n  if (document.readyState === 'loading')");
+  const source = fs.readFileSync(path.join(root,'js/app.js'),'utf8').replace("  if (document.readyState === 'loading')", "  window.testApp = {state:state,doOutput:doOutput,effectiveMode:effectiveMode,enterOutput:enterOutput,modalOutput:modalOutput,mainQuery:mainQuery,bootstrap:bootstrap,addExamples:addExamples};\n  if (document.readyState === 'loading')");
   vm.runInContext(source,c);
   c.testApp.state.settings={output:'paste',pasteMode:'pasteText',invertModifier:true,delimiter:'mustache'};
   c.testApp.state.ctx={now:new Date(2026,9,3),clipboard:'snapshot'};
@@ -68,7 +68,7 @@ function harness() {
     assert.equal(app.mainQuery({type:'text',payload:'snippetbox'}),'snippetbox');
     assert.equal(app.mainQuery({type:'cmd',payload:'snippet'}),'');
   });
-  await check('startup with a missing initialization flag performs no sample writes',async()=>{
+  await check('startup requests idempotent example initialization and then loads its records',async()=>{
     const {app,c,nodes}=harness();let reads=0;
     const node=()=>({hidden:false,value:'',classList:{toggle:()=>{}},addEventListener:()=>{},setAttribute:()=>{},querySelector:()=>({textContent:''}),focus:()=>{}});
     c.document.getElementById=id=>nodes[id]||(nodes[id]=node());
@@ -76,11 +76,44 @@ function harness() {
     c.utools.onPluginEnter=()=>{};
     c.SBStore.getSettings=()=>({output:'paste',theme:'auto',layout:'quick',directPrefix:'',delimiter:'mustache'});
     c.SBStore.loadAll=()=>{reads++;return Promise.resolve({snippets:[],groups:[]});};
-    c.SBStore.getFlag=()=>{throw new Error('startup must not depend on an initialization flag');};
+    let initializes=0;
+    c.SBStore.addExamples=options=>{assert.equal(options.onlyIfEmpty,true);initializes++;return Promise.resolve({added:0});};
     c.SBUI.renderSidebar=()=>{};c.SBUI.renderCtxStat=()=>{};
     app.bootstrap();await new Promise(resolve=>setImmediate(resolve));
-    assert.equal(reads,1);assert.equal(app.state.snippets.length,0);assert.equal(app.state.groups.length,0);
+    assert.equal(initializes,1);assert.equal(reads,1);assert.equal(app.state.snippets.length,0);assert.equal(app.state.groups.length,0);
     assert(!c.document.body.innerHTML,'startup should succeed without seeding');
+  });
+  await check('filter badges match the corresponding list under every search',async()=>{
+    const {app,c}=harness();
+    app.state.snippets=[
+      {id:'commit',name:'commit 范例',content:'hello',keyword:'',searchKey:'git',group:'examples',pinned:true,lastUsedAt:''},
+      {id:'sign',name:'邮箱签名',content:'hello',keyword:'sign',searchKey:'',group:'work',pinned:false,lastUsedAt:new Date().toISOString()},
+      {id:'quote',name:'引用',content:'clipboard',keyword:'',searchKey:'',group:'',pinned:true,lastUsedAt:''}
+    ];
+    const filters=[{type:'all'},{type:'pinned'},{type:'recent'},{type:'ungrouped'},{type:'group',id:'examples'},{type:'group',id:'work'}];
+    for(const query of ['','hello','git','clipboard','snippet','没有结果']){
+      app.state.query=query;
+      const counts=c.SBUI.filterCounts(app.state);
+      for(const filter of filters){
+        app.state.filter=filter;
+        const expected=filter.type==='group' ? (counts.groups[filter.id]||0) : counts[filter.type];
+        assert.equal(c.SBUI.searchSort(app.state).length,expected,query+' / '+JSON.stringify(filter));
+      }
+      if(query==='snippet'||query==='没有结果') assert.equal(counts.all,0);
+      if(query==='git') {assert.equal(counts.all,1);assert.equal(counts.groups.examples,1);assert.equal(counts.pinned,1);assert.equal(counts.recent,0);}
+    }
+  });
+  await check('adding examples clears stale search and filters and shows the list',async()=>{
+    const {app,c,nodes}=harness();
+    const node=()=>({hidden:false,value:'',focus:()=>{}});
+    c.document.getElementById=id=>nodes[id]||(nodes[id]=node());
+    app.state.view='settings';app.state.query='snippet';app.state.filter={type:'group',id:'old'};
+    c.SBStore.addExamples=()=>Promise.resolve({added:4});
+    c.SBStore.loadAll=()=>Promise.resolve({snippets:[{id:'example',name:'范例',content:'内容',direct:false}],groups:[]});
+    c.SBUI.renderCtxStat=()=>{};c.SBUI.renderSettings=()=>{};
+    await app.addExamples();
+    assert.equal(app.state.query,'');assert.equal(app.state.filter.type,'all');assert.equal(app.state.view,'list');
+    assert.equal(nodes.searchInput.value,'');assert.equal(nodes.searchClear.hidden,true);assert.equal(app.state.snippets.length,1);
   });
   console.log('Passed '+checks+' application checks.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

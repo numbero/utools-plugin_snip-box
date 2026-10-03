@@ -336,7 +336,7 @@ function legacySample(id) {
   var t = '2026-10-02T12:00:00.000Z';
   return { id: id, name: 'git commit 模板', group: 'g-work', pinned: true, direct: true, keyword: 'commit', searchKey: 'commit git', content: 'feat({{?scope}}): {{?改动}}\n\n#{{date:YYYY-MM-DD}} by {{user}}', useCount: 84, lastUsedAt: t, createdAt: t, updatedAt: t, type: 'snippet', _id: 'snip:' + id, _rev: '1-legacy' };
 }
-test('首次安装只读取空库，不创建片段、默认分组或演示统计', async function () {
+test('读取空库不会虚构片段、默认分组或演示统计', async function () {
   var env = harness();
   env.store.getSettings();
   var state = await env.store.loadAll();
@@ -391,6 +391,82 @@ test('确认清理期间被同步更新的片段和分组不覆盖', async funct
   assert.strictEqual(result.preserved, 1);
   assert.strictEqual(env.docs['snip:old1'].content, '远端改好的模板');
   assert.strictEqual(env.docs['meta:groups'].groups[0].name, '新工作');
+});
+
+test('首次空库添加4个可操作范例，统计从0开始且不注册直达指令', async function () {
+  var env = harness(true);
+  var result = await env.store.addExamples({onlyIfEmpty:true});
+  assert.strictEqual(result.added, 4);
+  var data = await env.store.loadAll();
+  assert.strictEqual(data.snippets.length, 4);
+  assert.strictEqual(data.groups.length, 1);
+  assert.strictEqual(data.groups[0].name, '范例');
+  data.snippets.forEach(function (s) { assert.strictEqual(s.useCount, 0); assert.strictEqual(s.lastUsedAt, ''); assert.strictEqual(s.direct, false); assert.strictEqual(s.group, data.groups[0].id); assert.ok(s.content.length); });
+});
+test('重启或重新添加范例不重复写入，不依赖旧seeded标记', async function () {
+  var env = harness();
+  await env.store.addExamples({onlyIfEmpty:true});
+  var writes = env.puts;
+  delete env.values.examplesInitializedV2;
+  await env.store.addExamples({onlyIfEmpty:true});
+  assert.strictEqual(env.puts, writes);
+  var result = await env.store.addExamples();
+  assert.strictEqual(result.added, 0);
+  assert.strictEqual(result.skipped, 4);
+  assert.strictEqual(env.puts, writes);
+  assert.strictEqual((await env.store.loadAll()).snippets.length, 4);
+});
+test('已有片段库不会自动补范例；主动添加不覆盖片段、分组或设置', async function () {
+  var env = harness();
+  await env.store.saveGroups([{id:'mine',name:'自己的分组'}]);
+  await env.store.saveSnippet(snippet('own','真实模板'));
+  env.store.saveSettings({output:'copy'});
+  var result = await env.store.addExamples({onlyIfEmpty:true});
+  assert.strictEqual(result.added, 0);
+  assert.strictEqual((await env.store.loadAll()).snippets.length, 1);
+  await env.store.addExamples();
+  var data = await env.store.loadAll();
+  assert.strictEqual(data.snippets.length, 5);
+  assert.strictEqual(data.groups[0].id, 'mine');
+  assert.strictEqual(env.docs['snip:own'].content, '真实模板');
+  assert.strictEqual(env.store.getSettings().output, 'copy');
+});
+test('修改过的范例不覆盖，移除的范例可主动恢复，清空后不自动回来', async function () {
+  var env = harness();
+  await env.store.addExamples();
+  var data = await env.store.loadAll();
+  var changed = data.snippets[0]; changed.content = '我改过的模板';
+  await env.store.saveSnippet(changed);
+  await env.store.deleteSnippet(data.snippets[1]);
+  var result = await env.store.addExamples();
+  assert.strictEqual(result.added, 1);
+  assert.strictEqual(env.docs['snip:' + changed.id].content, '我改过的模板');
+  data = await env.store.loadAll();
+  for (var i = 0; i < data.snippets.length; i++) await env.store.deleteSnippet(data.snippets[i]);
+  await env.store.addExamples({onlyIfEmpty:true});
+  assert.strictEqual((await env.store.loadAll()).snippets.length, 0);
+});
+test('范例中途写入失败撤销本次新增，不留下虚假的分组数量', async function () {
+  var env = harness();
+  env.beforePut = function (doc) { if (doc._id === 'snip:example-daily') return failure('disk_failure'); };
+  await rejects(env.store.addExamples(), /范例添加失败/);
+  assert.strictEqual(Object.keys(env.docs).length, 0);
+  assert.strictEqual(env.values.examplesInitializedV2, undefined);
+});
+test('并发写入同ID范例不生成副本，也不误删其他窗口的范例分组', async function () {
+  var env = harness();
+  var injected = false;
+  env.beforePut = function (doc) {
+    if (doc._id === 'snip:example-commit' && !injected) {
+      injected = true; var concurrent = clone(doc); concurrent._rev = '8-concurrent'; env.docs[doc._id] = concurrent;
+      return failure('conflict');
+    }
+    if (doc._id === 'snip:example-daily') return failure('disk_failure');
+  };
+  await rejects(env.store.addExamples(), /范例添加失败/);
+  assert.strictEqual(env.docs['snip:example-commit']._rev, '8-concurrent');
+  assert.strictEqual(env.docs['meta:groups'].groups[0].id, 'g-examples');
+  assert.strictEqual(Object.keys(env.docs).length, 2);
 });
 
 (async function () {
