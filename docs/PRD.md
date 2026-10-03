@@ -339,14 +339,14 @@
 
 | 占位符 | 示例输出 | 来源 |
 |---|---|---|
-| `{{user}}` | `numbero` | preload `os.userInfo().username` |
-| `{{home}}` | `/Users/numbero` | preload `os.homedir()` |
+| `{{user}}` | `demo` | preload `os.userInfo().username` |
+| `{{home}}` | `/Users/demo` | preload `os.homedir()` |
 | `{{hostname}}` | `MacBook-Pro.local` | preload `os.hostname()` |
 | `{{platform}}` | `macOS` | 友好名（`isMacOS/isWindows/isLinux`） |
 | `{{os}}` | `darwin` | 原始 `process.platform` |
 | `{{arch}}` | `arm64` | preload `os.arch()` |
 | `{{tmpdir}}` | `/var/folders/...` | preload `os.tmpdir()` |
-| `{{cwd}}` | `/Users/numbero/Documents/Workspace/ui-design` | preload `process.cwd()` |
+| `{{cwd}}` | `/Users/demo/Projects/snippet-box` | preload `process.cwd()` |
 | `{{folder}}` | 当前访达/资源管理器目录 | `utools.readCurrentFolderPath()`（异步，快照期抓取） |
 | `{{url}}` | 当前浏览器标签页 URL | `utools.readCurrentBrowserUrl()`（异步，快照期抓取） |
 | `{{url:title}}` | 标签页标题 | 同上返回值中的 title |

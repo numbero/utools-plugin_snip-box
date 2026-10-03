@@ -11,20 +11,20 @@
   var MOCK_CONTEXT = {
     now: new Date(2026, 8, 6, 22, 15, 3, 123),
     clipboard: 'feat(engine): 支持日期偏移语法',
-    folder: '/Users/numbero/Documents/Workspace/ui-design',
+    folder: '/Users/demo/Projects/snippet-box',
     url: {
       url: 'https://www.u-tools.cn/docs/developer/api-reference/utools/input.html',
       title: '输入 | uTools 开发者文档'
     },
     sys: {
-      user: 'numbero',
-      home: '/Users/numbero',
+      user: 'demo',
+      home: '/Users/demo',
       hostname: 'MacBook-Pro.local',
       platform: 'macOS',
       os: 'darwin',
       arch: 'arm64',
-      tmpdir: '/var/folders/q7/x2f8k3jd5n1g9c7t0m4w0000gn/T',
-      cwd: '/Users/numbero/Documents/Workspace/ui-design',
+      tmpdir: '/tmp',
+      cwd: '/Users/demo/Projects/snippet-box',
       appVersion: '5.2.0',
       pluginVersion: '1.0.0'
     },

@@ -1338,7 +1338,7 @@ button.journey:hover { border-color: var(--accent-line); background: var(--surfa
   if(['light','dark'].includes(previewParams.get('theme')))state.settings.theme=previewParams.get('theme');
   if(palettes.includes(previewParams.get('palette')))state.settings.palette=previewParams.get('palette');
   let cache = new Map(), toastTimer, modalFocus;
-  let context = {now:new Date(),clipboard:'把重复的事情交给工具，把时间留给创造。',folder:'/Users/numbero/Projects/snippet-box',url:{url:'https://www.u-tools.cn',title:'uTools'},sys:{user:'numbero',platform:'macOS',arch:'arm64',os:'darwin',home:'/Users/numbero',appVersion:'演示环境'},variables:{}};
+  let context = {now:new Date(),clipboard:'把重复的事情交给工具，把时间留给创造。',folder:'/Users/demo/Projects/snippet-box',url:{url:'https://www.u-tools.cn',title:'uTools'},sys:{user:'demo',platform:'macOS',arch:'arm64',os:'darwin',home:'/Users/demo',appVersion:'演示环境'},variables:{}};
   function persist() { try {localStorage.setItem(key,JSON.stringify({groups:state.groups,snippets:state.snippets,settings:state.settings}));} catch(_){toast('浏览器存储不可用，本次更改只保留在当前页面。');} }
   function group(id) { return state.groups.find(g=>g.id===id); }
   function groupTint(g) { return g.color.toLowerCase()==='#7861d9'?'var(--accent)':g.color; }
