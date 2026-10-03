@@ -394,7 +394,7 @@
     var rtP = window.api ? window.api.getRuntime().catch(function () { return {}; }) : Promise.resolve({});
     return Promise.all([sysP, rtP]).then(function (res) {
       state.about = {
-        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.3',
+        pluginVersion: (res[0] && res[0].pluginVersion) || '1.0.4',
         appVersion: (res[0] && res[0].appVersion) || '',
         chrome: (res[1] && res[1].chrome) || '',
         node: (res[1] && res[1].node) || ''
