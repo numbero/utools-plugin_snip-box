@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <title>Snippet Box</title>
   <desc>Two reusable snippet cards with template brackets.</desc>
-  <rect width="256" height="256" rx="58" fill="#171C26"/>
-  <rect x="55" y="50" width="116" height="132" rx="18" fill="#F4F6FA"/>
-  <rect x="85" y="80" width="116" height="132" rx="18" fill="#16A6FF"/>
-  <path d="M125 122 107 146 125 170M161 122 179 146 161 170" fill="none" stroke="#171C26" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="256" height="256" rx="58" fill="#111111"/>
+  <rect x="55" y="50" width="116" height="132" rx="18" fill="none" stroke="#FFFFFF" stroke-width="10"/>
+  <rect x="85" y="80" width="116" height="132" rx="18" fill="#FFFFFF" stroke="#111111" stroke-width="12"/>
+  <path d="M125 122 107 146 125 170M161 122 179 146 161 170" fill="none" stroke="#111111" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -133,7 +133,7 @@
 
   window.api = {
     readClipboard: function () { return Promise.resolve(''); },
-    getSys: function () { return Promise.resolve({ pluginVersion: '1.0.4' }); },
+    getSys: function () { return Promise.resolve({ pluginVersion: '1.0.5' }); },
     getRuntime: function () { return Promise.resolve({}); },
     readFile: function (file) {
       return Object.prototype.hasOwnProperty.call(files, file)
