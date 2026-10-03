@@ -1,4 +1,4 @@
-/* Snippet Box · 活力橙主题。浅色、深色与跟随系统共用同一组语义令牌。 */
+/* Snippet Box · 浅色蓝、深色橙；跟随系统使用对应的语义配色。 */
 :root {
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "PingFang SC", monospace;
@@ -15,11 +15,11 @@
   --surface: #ffffff; --surface-2: #fafafa; --surface-3: #f1f2f3;
   --surface-sunken: #fafafa; --titlebar: #fafafa;
   --border: #e6e7e9; --border-strong: #d5d8dc; --border-faint: #eef0f2;
-  --text: #26292d; --text-2: #60666f; --text-3: #767c85; --text-inv: #2b1505;
-  --accent: #b64e0c; --accent-strong: #983d06;
-  --action-bg: #ff8524; --action-hover: #ff9c4e;
-  --accent-soft: #fff0e4; --accent-soft-2: #ffe0c5; --accent-border: #f5c7a3;
-  --hover: #f0f1f3; --selected: #ffead8;
+  --text: #26292d; --text-2: #60666f; --text-3: #767c85; --text-inv: #ffffff;
+  --accent: #1d4ed8; --accent-strong: #1e40af;
+  --action-bg: #2563eb; --action-hover: #1d4ed8;
+  --accent-soft: #eff6ff; --accent-soft-2: #dbeafe; --accent-border: #bfd7ff;
+  --hover: #f0f1f3; --selected: #e8f1ff;
   --danger: #bc4249; --danger-soft: #fcebec;
   --success: #27764f; --success-soft: #e9f5ed;
   --warning: #986322; --warning-soft: #fbf1de; --warning-border: #ead6b0;
@@ -27,16 +27,16 @@
   --tok-clip-fg: #326b9b; --tok-clip-bg: #eaf2fa;
   --tok-rand-fg: #60666f; --tok-rand-bg: #f1f2f3;
   --tok-sys-fg: #326b9b; --tok-sys-bg: #eaf2fa;
-  --tok-var-fg: #b64e0c; --tok-var-bg: #fff0e4;
+  --tok-var-fg: #1d4ed8; --tok-var-bg: #eff6ff;
   --tok-unknown-fg: #bc4249; --tok-unknown-bg: #fcebec;
   --tok-invalid-fg: #bc4249; --tok-invalid-bg: #fcebec;
   --tok-missing-fg: #986322; --tok-missing-bg: #fbf1de;
-  --group-1: #eb7b25; --group-2: #4688c6; --group-3: #3f9b76;
+  --group-1: #2563eb; --group-2: #4688c6; --group-3: #3f9b76;
   --group-4: #d3a23c; --group-5: #ce7771; --group-6: #47a3ac; --group-7: #88929e;
   --shadow-pop: 0 20px 56px #22262b30, 0 3px 12px #22262b0d;
   --shadow-inset: inset 0 1px 2px #22262b08;
-  --action-shadow: 0 3px 12px #ff852418;
-  --focus-ring: 0 0 0 3px #ff852430; --overlay: #26292d66;
+  --action-shadow: 0 3px 12px #2563eb18;
+  --focus-ring: 0 0 0 3px #2563eb30; --overlay: #26292d66;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;

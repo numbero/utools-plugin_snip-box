@@ -1,4 +1,4 @@
-/* Snippet Box · 活力橙界面，兼容 Chromium 91。 */
+/* Snippet Box · 浅色蓝、深色橙界面，兼容 Chromium 91。 */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body { font-family: var(--font-ui); font-size: 13px; line-height: 1.5; background: var(--surface); color: var(--text); -webkit-font-smoothing: antialiased; overflow: hidden; }

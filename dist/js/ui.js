@@ -452,7 +452,7 @@ window.SBUI = (function () {
     html += '</div>';
 
     html += '<div class="set-sec"><h3 class="set-sec-title">外观</h3>';
-    html += row('主题', '跟随系统自动切换浅色与深色，使用活力橙配色',
+    html += row('主题', '跟随系统自动切换；浅色使用蓝色，深色使用活力橙',
       segHtml('theme', s.theme, [['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']]));
     html += row('默认布局', '快速调用使用双栏；管理视图会显示分组侧栏',
       segHtml('layout', s.layout || 'quick', [['quick', '快速调用'], ['manage', '管理视图']]));
