@@ -1,14 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <style>
-    .bg { fill: #5B6BD6; }
-    .ln { fill: #FFFFFF; }
-    @media (prefers-color-scheme: dark) {
-      .bg { fill: #8290F5; }
-      .ln { fill: #16161C; }
-    }
-  </style>
-  <rect class="bg" x="0" y="0" width="256" height="256" rx="58"/>
-  <g class="ln">
+  <rect fill="#FF8524" x="0" y="0" width="256" height="256" rx="58"/>
+  <g fill="#2B1505">
     <rect x="62" y="72" width="132" height="20" rx="10"/>
     <rect x="62" y="118" width="66" height="24" rx="12"/>
     <rect x="138" y="118" width="56" height="24" rx="12" opacity=".45"/>
